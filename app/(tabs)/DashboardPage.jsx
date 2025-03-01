@@ -309,7 +309,7 @@ const Dashboard = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickActionButton}
-              onPress={() => router.push("/(tabs)/settings")}
+              onPress={() => router.push("/(tabs)/Settings")}
             >
               <Icon name="settings-outline" size={24} color="#fff" />
               <Text style={styles.quickActionText}>Settings</Text>
