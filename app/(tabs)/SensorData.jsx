@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
+  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
   Dimensions,
-  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, BounceIn } from "react-native-reanimated";
@@ -37,7 +36,7 @@ const SensorData = () => {
       name: "GSM Module",
       status: "Active",
       lastChecked: "3 min ago",
-      icon: "signal-cellular-alt",
+      icon: "signal-cellular",
     },
     {
       id: "motion",
@@ -54,43 +53,89 @@ const SensorData = () => {
       icon: "camera",
     },
   ]);
-  const [loading, setLoading] = useState(false); // No real loading since no backend
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Simulate loading delay for UI testing
     const timer = setTimeout(() => setLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  const renderSensor = ({ item }) => (
-    <Animated.View entering={FadeIn} style={styles.sensorCard}>
-      <View style={styles.sensorHeader}>
-        <Icon name={item.icon} size={24} color="#4CAF50" />
-        <Text style={styles.sensorTitle}>{item.name}</Text>
-      </View>
-      <View style={styles.sensorStatusRow}>
-        <Text style={styles.sensorStatus}>
-          Status:{" "}
-          <Text
-            style={{ color: item.status === "Active" ? "#4CAF50" : "#D32F2F" }}
+  // Combined data structure for FlatList
+  const pageData = [
+    { type: "header", id: "header" },
+    { type: "sensors", id: "sensors", data: sensors },
+    { type: "refresh", id: "refresh" },
+  ];
+
+  const renderItem = ({ item }) => {
+    switch (item.type) {
+      case "header":
+        return (
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Sensor Status - Pi Unit 001</Text>
+            <TouchableOpacity
+              onPress={() => router.replace("/(tabs)/dashboard")}
+            >
+              <Icon name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        );
+      case "sensors":
+        return item.data.length > 0 ? (
+          item.data.map((sensor) => (
+            <Animated.View
+              key={sensor.id}
+              entering={FadeIn}
+              style={styles.sensorCard}
+            >
+              <View style={styles.sensorHeader}>
+                <Icon name={sensor.icon} size={24} color="#4CAF50" />
+                <Text style={styles.sensorTitle}>{sensor.name}</Text>
+              </View>
+              <View style={styles.sensorStatusRow}>
+                <Text style={styles.sensorStatus}>
+                  Status:{" "}
+                  <Text
+                    style={{
+                      color: sensor.status === "Active" ? "#4CAF50" : "#D32F2F",
+                    }}
+                  >
+                    {sensor.status}
+                  </Text>
+                </Text>
+                <Animated.View
+                  entering={BounceIn}
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        sensor.status === "Active" ? "#4CAF50" : "#D32F2F",
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.sensorDetail}>
+                Last Checked: {sensor.lastChecked}
+              </Text>
+            </Animated.View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No sensors available</Text>
+        );
+      case "refresh":
+        return (
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={() => setLoading(true)}
           >
-            {item.status}
-          </Text>
-        </Text>
-        <Animated.View
-          entering={BounceIn}
-          style={[
-            styles.statusDot,
-            {
-              backgroundColor: item.status === "Active" ? "#4CAF50" : "#D32F2F",
-            },
-          ]}
-        />
-      </View>
-      <Text style={styles.sensorDetail}>Last Checked: {item.lastChecked}</Text>
-    </Animated.View>
-  );
+            <Text style={styles.refreshButtonText}>Refresh Status</Text>
+          </TouchableOpacity>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (loading) {
     return (
@@ -102,31 +147,13 @@ const SensorData = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Sensor Status - Pi Unit 001</Text>
-          <TouchableOpacity onPress={() => router.replace("/(tabs)/dashboard")}>
-            <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={sensors}
-          renderItem={renderSensor}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No sensors available</Text>
-          }
-        />
-
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={() => setLoading(true)}
-        >
-          <Text style={styles.refreshButtonText}>Refresh Status</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <FlatList
+        data={pageData}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
     </SafeAreaView>
   );
 };
@@ -152,6 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginVertical: 12,
+    marginHorizontal: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -177,11 +205,7 @@ const styles = StyleSheet.create({
   },
   sensorStatus: { color: "#fff", fontSize: 16 },
   sensorDetail: { color: "#999", fontSize: 14 },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
+  statusDot: { width: 12, height: 12, borderRadius: 6 },
   emptyText: {
     color: "#fff",
     fontSize: 16,
