@@ -259,7 +259,7 @@ const Dashboard = () => {
                 style={styles.alertCard}
                 onPress={() =>
                   router.push({
-                    pathname: "/(tabs)/alert-detail",
+                    pathname: "/(tabs)/AlertDetailPage",
                     params: { alertId: alert.id },
                   })
                 }
