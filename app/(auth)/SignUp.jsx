@@ -1,73 +1,78 @@
-// SignUpPage.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  Alert,
   ActivityIndicator,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
-// import { useAuth } from "../contexts/AuthContext";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Picker } from "@react-native-picker/picker";
+import { useAuth } from "../../context/authContext"; // Adjust path as needed
 
 const SignUp = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [roleInput, setRoleInput] = useState("security");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const { signup } = useAuth();
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    phoneNumber: "",
+    role: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // const { signup, user } = useAuth();
-  const navigation = useNavigation();
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on change
+  };
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePassword = (password) => password.length >= 6;
-  const validatePhone = (phone) => /^\+\d{10,15}$/.test(phone);
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.username.trim()) newErrors.username = "Username is required";
+    if (!formData.email.match(/\S+@\S+\.\S+/))
+      newErrors.email = "Enter a valid email";
+    if (!formData.phoneNumber.match(/^\+?\d{10,11}$/))
+      newErrors.phoneNumber = "Enter a valid phone number (e.g., +1234567890)";
+    if (!formData.role.trim()) newErrors.role = "Role is required";
+    if (formData.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+    if (formData.confirmPassword !== formData.password)
+      newErrors.confirmPassword = "Passwords do not match";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSignUp = async () => {
-    if (user && user.role !== "admin") {
-      Alert.alert("Access Denied", "Only admins can sign up new users");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
-      return;
-    }
-
-    if (!validatePassword(password)) {
-      Alert.alert(
-        "Invalid Password",
-        "Password must be at least 6 characters long"
-      );
-      return;
-    }
-
-    if (!validatePhone(phoneNumber)) {
-      Alert.alert(
-        "Invalid Phone Number",
-        "Please enter a valid phone number starting with +"
-      );
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
 
     try {
-      await signup(email, password, roleInput, phoneNumber);
-      Alert.alert("Success", "Account created successfully!");
-      navigation.navigate("SignIn");
+      // Use signup from useAuth context, which handles Firebase Auth and Firestore
+      await signup(
+        formData.email,
+        formData.password,
+        formData.role,
+        formData.phoneNumber,
+        formData.username
+      );
+      router.push("/(auth)/SignIn"); // Redirect to dashboard on success
     } catch (error) {
-      Alert.alert("Signup Failed", error.message);
+      setErrors({ form: error.message || "Sign up failed. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -75,380 +80,271 @@ const SignUp = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView keyboardShouldPersistTaps="handled">
-        <Animated.View entering={FadeIn} style={styles.content}>
-          <Image
-            source={require("../../assets/images/react-logo.png")}
-            style={styles.logo}
-          />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <LinearGradient colors={["#4CAF50", "#2E7D32"]} style={styles.header}>
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.headerContent}
+            >
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerText}>Sign Up</Text>
+                <Text style={styles.subHeaderText}>
+                  Join the Wildlife Monitoring Team
+                </Text>
+              </View>
+            </Animated.View>
+          </LinearGradient>
 
-          <Text style={styles.title}>Sign Up</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={[styles.input, styles.passwordInput]}
-              placeholder="Enter password (6+ chars)"
-              placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Icon
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color="white"
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={roleInput}
-              onValueChange={(itemValue) => setRoleInput(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Admin" value="admin" />
-              <Picker.Item label="Security" value="security" />
-            </Picker>
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="+1234567890"
-            placeholderTextColor="#999"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-          />
-          <TouchableOpacity
-            style={[styles.button, loading && styles.disabledButton]}
-            onPress={handleSignUp}
-            disabled={loading}
+          <Animated.View
+            entering={FadeIn.duration(1000)}
+            style={styles.formContainer}
           >
-            <Text style={styles.buttonText}>Sign Up</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate("SignIn")}>
-            <Text style={styles.loginText}>Have an account? Login</Text>
-          </TouchableOpacity>
-          {loading && <ActivityIndicator color="white" style={styles.loader} />}
-        </Animated.View>
-      </ScrollView>
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="person-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor="#999"
+                value={formData.username}
+                onChangeText={(value) => handleChange("username", value)}
+              />
+            </View>
+            {errors.username && (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="mail-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#999"
+                value={formData.email}
+                onChangeText={(value) => handleChange("email", value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="call-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number (e.g., +1234567890)"
+                placeholderTextColor="#999"
+                value={formData.phoneNumber}
+                onChangeText={(value) => handleChange("phoneNumber", value)}
+                keyboardType="phone-pad"
+              />
+            </View>
+            {errors.phoneNumber && (
+              <Text style={styles.errorText}>{errors.phoneNumber}</Text>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="shield-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.role}
+                  onValueChange={(value) => handleChange("role", value)}
+                  style={styles.picker}
+                  mode="dropdown"
+                  dropdownIconColor="#4CAF50"
+                >
+                  <Picker.Item label="Select Role" value="" color="#999" />
+                  <Picker.Item label="Admin" value="admin" color="grey" />
+                  <Picker.Item label="Security" value="security" color="grey" />
+                </Picker>
+              </View>
+            </View>
+            {errors.role && <Text style={styles.errorText}>{errors.role}</Text>}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="lock-closed-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#999"
+                value={formData.password}
+                onChangeText={(value) => handleChange("password", value)}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Icon
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={24}
+                  color="#4CAF50"
+                  style={styles.eyeIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="lock-closed-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor="#999"
+                value={formData.confirmPassword}
+                onChangeText={(value) => handleChange("confirmPassword", value)}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Icon
+                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                  size={24}
+                  color="#4CAF50"
+                  style={styles.eyeIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
+
+            {errors.form && <Text style={styles.errorText}>{errors.form}</Text>}
+
+            <TouchableOpacity
+              style={styles.signUpButton}
+              onPress={handleSignUp}
+              disabled={loading}
+            >
+              <LinearGradient
+                colors={["#4CAF50", "#388E3C"]}
+                style={styles.buttonGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Sign Up</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.push("/(auth)/SignIn")}>
+              <Text style={styles.signInLink}>
+                Already have an account?{" "}
+                <Text style={styles.signInText}>Sign In</Text>
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
+  container: { flex: 1, backgroundColor: "#121212" },
+  scrollContent: { flexGrow: 1, justifyContent: "center" },
+  header: {
+    padding: 40,
     alignItems: "center",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  logo: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain",
-    marginBottom: 20,
-  },
-  title: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    fontFamily: "Arial",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  input: {
-    borderColor: "white",
-    borderWidth: 1,
-    borderRadius: 5,
-    color: "white",
-    width: "90%",
-    height: 50,
-    padding: 10,
-    marginBottom: 15,
-  },
-  passwordContainer: {
-    width: "90%",
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    justifyContent: "center",
   },
-  passwordInput: {
+  headerTextContainer: { alignItems: "center" },
+  headerText: { color: "#fff", fontSize: 32, fontWeight: "bold" },
+  subHeaderText: { color: "#ddd", fontSize: 16, marginTop: 5 },
+  formContainer: {
+    padding: 20,
+    marginTop: -20,
+    backgroundColor: "#1e1e1e",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     flex: 1,
-    marginBottom: 0,
   },
-  eyeIcon: {
-    position: "absolute",
-    right: 10,
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333333", // Grey background
+    borderRadius: 12,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+  },
+  inputIcon: { marginRight: 10 },
+  input: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 16,
+    paddingVertical: 12,
   },
   pickerContainer: {
-    borderColor: "white",
-    borderWidth: 1,
-    borderRadius: 5,
-    width: "90%",
-    marginBottom: 15,
+    flex: 1,
+    borderRadius: 12,
     overflow: "hidden",
   },
   picker: {
-    color: "white",
-    backgroundColor: "#4CAF50",
-  },
-  button: {
-    backgroundColor: "#4CAF50",
-    width: "90%",
+    color: "#fff",
+    backgroundColor: "#333333", // Grey background
     height: 50,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+  },
+  eyeIcon: { padding: 10 },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
     marginBottom: 15,
+    textAlign: "center",
   },
-  disabledButton: {
-    opacity: 0.5,
+  signUpButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 20,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+  buttonGradient: {
+    padding: 15,
+    alignItems: "center",
   },
-  loginText: {
-    color: "white",
-    fontSize: 16,
-    textDecorationLine: "underline",
-  },
-  loader: {
-    marginTop: 20,
-  },
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600" },
+  signInLink: { color: "#bbb", fontSize: 16, textAlign: "center" },
+  signInText: { color: "#4CAF50", fontWeight: "bold" },
 });
 
 export default SignUp;
-
-// SignUpPage.js
-// import { useState } from "react";
-// import {
-//   SafeAreaView,
-//   ScrollView,
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   Alert,
-//   ActivityIndicator,
-//   StyleSheet,
-//   Keyboard,
-//   TouchableWithoutFeedback,
-// } from "react-native";
-// import { Picker } from "@react-native-picker/picker";
-// import { useAuth } from "../context/AuthContext";
-// import { useRouter } from "expo-router";
-// import Icon from "react-native-vector-icons/Ionicons";
-// import { auth, db } from "../FirebaseConfig"; // ✅ Corrected import for auth & db
-// import { createUserWithEmailAndPassword } from "firebase/auth";
-// import { doc, setDoc } from "firebase/firestore";
-
-// const SignUp = () => {
-//   const router = useRouter();
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [role, setRole] = useState("security");
-//   const [phoneNumber, setPhoneNumber] = useState("");
-//   const [loading, setLoading] = useState(false);
-//   const [showPassword, setShowPassword] = useState(false);
-
-//   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-//   const validatePassword = (password) => password.length >= 6;
-//   const validatePhone = (phone) => /^\+?\d{10,15}$/.test(phone);
-
-//   const handleSignUp = async () => {
-//     Keyboard.dismiss();
-
-//     if (!validateEmail(email)) {
-//       Alert.alert("Invalid Email", "Please enter a valid email address");
-//       return;
-//     }
-//     if (!validatePassword(password)) {
-//       Alert.alert(
-//         "Invalid Password",
-//         "Password must be at least 6 characters long"
-//       );
-//       return;
-//     }
-//     if (!validatePhone(phoneNumber)) {
-//       Alert.alert(
-//         "Invalid Phone Number",
-//         "Enter a valid phone number starting with + if needed"
-//       );
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       // 🔥 Firebase Authentication - Create User
-//       const userCredential = await createUserWithEmailAndPassword(
-//         auth,
-//         email,
-//         password
-//       );
-//       const user = userCredential.user;
-
-//       // 🔥 Firestore - Save User Info
-//       await setDoc(doc(db, "users", user.uid), {
-//         email,
-//         role,
-//         phoneNumber,
-//         active: true,
-//       });
-
-//       Alert.alert("Success", "Account created successfully!");
-//       router.replace("/login");
-//     } catch (error) {
-//       console.error("Signup Error:", error);
-//       Alert.alert("Signup Failed", error.message || "Something went wrong.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-//       <SafeAreaView style={styles.container}>
-//         <ScrollView
-//           keyboardShouldPersistTaps="handled"
-//           contentContainerStyle={styles.content}
-//         >
-//           <Text style={styles.title}>Sign Up</Text>
-
-//           <TextInput
-//             style={styles.input}
-//             placeholder="Enter email"
-//             placeholderTextColor="#999"
-//             value={email}
-//             onChangeText={setEmail}
-//             keyboardType="email-address"
-//             autoCapitalize="none"
-//           />
-
-//           <View style={styles.passwordContainer}>
-//             <TextInput
-//               style={[styles.input, styles.passwordInput]}
-//               placeholder="Enter password (6+ chars)"
-//               placeholderTextColor="#999"
-//               value={password}
-//               onChangeText={setPassword}
-//               secureTextEntry={!showPassword}
-//             />
-//             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-//               <Icon
-//                 name={showPassword ? "eye-off" : "eye"}
-//                 size={24}
-//                 color="white"
-//               />
-//             </TouchableOpacity>
-//           </View>
-
-//           <View style={styles.pickerContainer}>
-//             <Picker
-//               selectedValue={role}
-//               onValueChange={setRole}
-//               style={styles.picker}
-//             >
-//               <Picker.Item label="Admin" value="admin" />
-//               <Picker.Item label="Security" value="security" />
-//             </Picker>
-//           </View>
-
-//           <TextInput
-//             style={styles.input}
-//             placeholder="Enter phone number"
-//             placeholderTextColor="#999"
-//             value={phoneNumber}
-//             onChangeText={setPhoneNumber}
-//             keyboardType="phone-pad"
-//           />
-
-//           <TouchableOpacity
-//             style={[styles.button, loading && styles.disabledButton]}
-//             onPress={handleSignUp}
-//             disabled={loading}
-//           >
-//             {loading ? (
-//               <ActivityIndicator color="white" />
-//             ) : (
-//               <Text style={styles.buttonText}>Sign Up</Text>
-//             )}
-//           </TouchableOpacity>
-
-//           <TouchableOpacity onPress={() => router.replace("/login")}>
-//             <Text style={styles.loginText}>Already have an account? Login</Text>
-//           </TouchableOpacity>
-//         </ScrollView>
-//       </SafeAreaView>
-//     </TouchableWithoutFeedback>
-//   );
-// };
-
-// // ✅ Styling
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: "#000" },
-//   content: {
-//     flexGrow: 1,
-//     justifyContent: "center",
-//     padding: 20,
-//     alignItems: "center",
-//   },
-//   title: { color: "white", fontSize: 28, fontWeight: "bold", marginBottom: 20 },
-//   input: {
-//     borderColor: "white",
-//     borderWidth: 1,
-//     borderRadius: 5,
-//     color: "white",
-//     width: "90%",
-//     height: 50,
-//     padding: 10,
-//     marginBottom: 15,
-//   },
-//   passwordContainer: {
-//     width: "90%",
-//     flexDirection: "row",
-//     alignItems: "center",
-//     marginBottom: 15,
-//   },
-//   passwordInput: { flex: 1 },
-//   pickerContainer: {
-//     borderColor: "white",
-//     borderWidth: 1,
-//     borderRadius: 5,
-//     width: "90%",
-//     marginBottom: 15,
-//     overflow: "hidden",
-//   },
-//   picker: { color: "white", backgroundColor: "#4CAF50" },
-//   button: {
-//     backgroundColor: "#4CAF50",
-//     width: "90%",
-//     height: 50,
-//     borderRadius: 10,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     marginBottom: 15,
-//   },
-//   disabledButton: { opacity: 0.5 },
-//   buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-//   loginText: { color: "white", fontSize: 16, textDecorationLine: "underline" },
-// });
-
-// export default SignUp;
