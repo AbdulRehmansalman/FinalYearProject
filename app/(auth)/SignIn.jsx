@@ -1,313 +1,228 @@
-// import React, { useState } from "react";
-// import {
-//   SafeAreaView,
-//   ScrollView,
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   Image,
-//   Alert,
-//   ActivityIndicator,
-// } from "react-native";
-// import { useNavigation } from "@react-navigation/native";
-// import Animated, { SlideInRight } from "react-native-reanimated";
-// import Icon from "react-native-vector-icons/Ionicons";
-
-// const SignIn = () => {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [loading, setLoading] = useState(false);
-//   const [showPassword, setShowPassword] = useState(false);
-
-//   const navigation = useNavigation();
-
-//   const handleLogin = async () => {
-//     if (!email || !password) {
-//       Alert.alert("Error", "Please enter both email and password");
-//       return;
-//     }
-
-//     setLoading(true);
-//     setTimeout(() => {
-//       Alert.alert("Success", "Login successful (Mocked Login)");
-//       setLoading(false);
-//       navigation.navigate("HomePage"); // Navigate to home page after login
-//     }, 2000);
-//   };
-
-//   const AnimatedView = Animated.createAnimatedComponent(View);
-
-//   return (
-//     <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
-//       <ScrollView keyboardShouldPersistTaps="handled">
-//         <AnimatedView
-//           entering={SlideInRight}
-//           style={{ flex: 1, justifyContent: "center", padding: 20 }}
-//         >
-//           <Image
-//             source={{ uri: "https://example.com/paw-shield.png" }}
-//             style={{
-//               width: 100,
-//               height: 100,
-//               resizeMode: "contain",
-//               alignSelf: "center",
-//               marginBottom: 20,
-//             }}
-//           />
-//           <Text style={styles.title}>Wildlife Prevention System - Login</Text>
-//           <TextInput
-//             placeholder="Enter email"
-//             value={email}
-//             onChangeText={setEmail}
-//             style={styles.input}
-//             placeholderTextColor="#999"
-//             keyboardType="email-address"
-//             autoCapitalize="none"
-//           />
-//           <View style={styles.passwordContainer}>
-//             <TextInput
-//               placeholder="Enter password"
-//               value={password}
-//               onChangeText={setPassword}
-//               style={[styles.input, { flex: 1 }]}
-//               placeholderTextColor="#999"
-//               secureTextEntry={!showPassword}
-//             />
-//             <TouchableOpacity
-//               onPress={() => setShowPassword(!showPassword)}
-//               style={styles.eyeIcon}
-//             >
-//               <Icon
-//                 name={showPassword ? "eye-off" : "eye"}
-//                 size={24}
-//                 color="white"
-//               />
-//             </TouchableOpacity>
-//           </View>
-//           <TouchableOpacity
-//             style={[styles.button, loading && styles.disabledButton]}
-//             onPress={handleLogin}
-//             disabled={loading}
-//           >
-//             <Text style={styles.buttonText}>Login</Text>
-//           </TouchableOpacity>
-//           {loading && (
-//             <ActivityIndicator color="white" style={{ marginTop: 20 }} />
-//           )}
-//         </AnimatedView>
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = {
-//   title: {
-//     color: "white",
-//     fontSize: 28,
-//     fontWeight: "bold",
-//     fontFamily: "Arial",
-//     textAlign: "center",
-//     marginBottom: 20,
-//   },
-//   input: {
-//     borderColor: "white",
-//     borderWidth: 1,
-//     borderRadius: 5,
-//     color: "white",
-//     width: "90%",
-//     height: 50,
-//     padding: 10,
-//     marginBottom: 15,
-//     alignSelf: "center",
-//   },
-//   passwordContainer: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     width: "90%",
-//     alignSelf: "center",
-//     marginBottom: 15,
-//   },
-//   eyeIcon: {
-//     position: "absolute",
-//     right: 10,
-//   },
-//   button: {
-//     backgroundColor: "#4CAF50",
-//     width: "90%",
-//     height: 50,
-//     borderRadius: 10,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     alignSelf: "center",
-//     marginBottom: 15,
-//   },
-//   disabledButton: {
-//     opacity: 0.5,
-//   },
-//   buttonText: {
-//     color: "white",
-//     fontSize: 18,
-//     fontWeight: "bold",
-//   },
-// };
-
-// export default SignIn;
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import Animated, { SlideInRight } from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
-import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "../../context/authContext"; // Adjust path as needed
 
 const SignIn = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const navigation = useNavigation();
-
-  //   const handleLogin = async () => {
-  //     setLoading(true);
-  //     setTimeout(() => {
-  //       setLoading(false);
-  //       navigation.navigate("HomePage"); // Navigate to home page after login
-  //     }, 2000);
-  //   };
-
-  const handleLogin = async () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.replace("/DashboardPage"); // Navigate to Dashboard inside (tabs)
-    }, 2000);
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on change
   };
 
-  const AnimatedView = Animated.createAnimatedComponent(View);
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.email.match(/\S+@\S+\.\S+/))
+      newErrors.email = "Enter a valid email";
+    if (!formData.password.trim()) newErrors.password = "Password is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignIn = async () => {
+    if (!validateForm()) return;
+    setLoading(true);
+
+    try {
+      await login(formData.email, formData.password);
+      router.push("/(tabs)/DashboardPage");
+    } catch (error) {
+      setErrors({ form: error.message || "Sign in failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
-      <ScrollView keyboardShouldPersistTaps="handled">
-        <AnimatedView
-          entering={SlideInRight}
-          style={{ flex: 1, justifyContent: "center", padding: 20 }}
-        >
-          <Image
-            source={{ uri: "https://example.com/paw-shield.png" }}
-            style={{
-              width: 100,
-              height: 100,
-              resizeMode: "contain",
-              alignSelf: "center",
-              marginBottom: 20,
-            }}
-          />
-          <Text style={styles.title}>Wildlife Prevention System - Login</Text>
-          <TextInput
-            placeholder="Enter email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <View style={styles.passwordContainer}>
-            <TextInput
-              placeholder="Enter password"
-              value={password}
-              onChangeText={setPassword}
-              style={[styles.input, { flex: 1 }]}
-              placeholderTextColor="#999"
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <LinearGradient colors={["#4CAF50", "#2E7D32"]} style={styles.header}>
+            <Animated.View
+              entering={FadeInUp.duration(800)}
+              style={styles.headerContent}
             >
-              <Icon
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color="white"
-              />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[styles.button, loading && styles.disabledButton]}
-            onPress={handleLogin}
-            disabled={loading}
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerText}>Sign In</Text>
+                <Text style={styles.subHeaderText}>
+                  Welcome Back to Wildlife Monitoring
+                </Text>
+              </View>
+            </Animated.View>
+          </LinearGradient>
+
+          <Animated.View
+            entering={FadeIn.duration(1000)}
+            style={styles.formContainer}
           >
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-          {loading && (
-            <ActivityIndicator color="white" style={{ marginTop: 20 }} />
-          )}
-        </AnimatedView>
-      </ScrollView>
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="mail-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#999"
+                value={formData.email}
+                onChangeText={(value) => handleChange("email", value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+
+            <View style={styles.inputWrapper}>
+              <Icon
+                name="lock-closed-outline"
+                size={24}
+                color="#4CAF50"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#999"
+                value={formData.password}
+                onChangeText={(value) => handleChange("password", value)}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Icon
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={24}
+                  color="#4CAF50"
+                  style={styles.eyeIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
+
+            {errors.form && <Text style={styles.errorText}>{errors.form}</Text>}
+
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={handleSignIn}
+              disabled={loading}
+            >
+              <LinearGradient
+                colors={["#4CAF50", "#388E3C"]}
+                style={styles.buttonGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Sign In</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.push("/(auth)/SignUp")}>
+              <Text style={styles.signUpLink}>
+                Don’t have an account?{" "}
+                <Text style={styles.signUpText}>Sign Up</Text>
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const styles = {
-  title: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "bold",
-    fontFamily: "Arial",
-    textAlign: "center",
-    marginBottom: 20,
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#121212" },
+  scrollContent: { flexGrow: 1, justifyContent: "center" },
+  header: {
+    padding: 40,
+    alignItems: "center",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  input: {
-    borderColor: "white",
-    borderWidth: 1,
-    borderRadius: 5,
-    color: "white",
-    width: "90%",
-    height: 50,
-    padding: 10,
-    marginBottom: 15,
-    alignSelf: "center",
-  },
-  passwordContainer: {
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    width: "90%",
-    alignSelf: "center",
-    marginBottom: 15,
-  },
-  eyeIcon: {
-    position: "absolute",
-    right: 10,
-  },
-  button: {
-    backgroundColor: "#4CAF50",
-    width: "90%",
-    height: 50,
-    borderRadius: 10,
     justifyContent: "center",
+  },
+  headerTextContainer: { alignItems: "center" },
+  headerText: { color: "#fff", fontSize: 32, fontWeight: "bold" },
+  subHeaderText: { color: "#ddd", fontSize: 16, marginTop: 5 },
+  formContainer: {
+    padding: 20,
+    marginTop: -20,
+    backgroundColor: "#1e1e1e",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    flex: 1,
+  },
+  inputWrapper: {
+    flexDirection: "row",
     alignItems: "center",
-    alignSelf: "center",
+    backgroundColor: "#333333", // Grey background for fields
+    borderRadius: 12,
     marginBottom: 15,
+    paddingHorizontal: 10,
   },
-  disabledButton: {
-    opacity: 0.5,
+  inputIcon: { marginRight: 10 },
+  input: {
+    flex: 1,
+    color: "#fff",
+    fontSize: 16,
+    paddingVertical: 12,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+  eyeIcon: { padding: 10 },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: "center",
   },
-};
+  signInButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  buttonGradient: {
+    padding: 15,
+    alignItems: "center",
+  },
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600" },
+  signUpLink: { color: "#bbb", fontSize: 16, textAlign: "center" },
+  signUpText: { color: "#4CAF50", fontWeight: "bold" },
+});
 
 export default SignIn;

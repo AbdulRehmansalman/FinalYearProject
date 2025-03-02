@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth, db } from "../../services/firebase";
+import { auth, db } from "../services/firebase"; // ✅ Import Firebase Web SDK
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-} from "@react-native-firebase/auth";
-import { doc, getDoc, setDoc } from "@react-native-firebase/firestore";
+} from "firebase/auth"; // ✅ Use Firebase Web SDK
+import { doc, getDoc, setDoc } from "firebase/firestore"; // ✅ Use Firestore Web SDK
 
 // ✅ Create Authentication Context
 const AuthContext = createContext({});
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // 📝 Signup function
-  const signup = async (email, password, role, phoneNumber) => {
+  const signup = async (email, password, role, phoneNumber, username) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -46,13 +46,14 @@ export const AuthProvider = ({ children }) => {
       const user = userCredential.user;
 
       await setDoc(doc(db, "users", user.uid), {
+        username,
         email,
         role,
         phoneNumber,
         active: true,
       });
 
-      setRole(role); // Update role immediately after signup
+      setRole(role);
       return user;
     } catch (error) {
       throw error;
@@ -72,6 +73,7 @@ export const AuthProvider = ({ children }) => {
       setRole(userDoc.data()?.role || null);
       return user;
     } catch (error) {
+      console.error("Login error:", error);
       throw error;
     }
   };
@@ -97,7 +99,7 @@ export const AuthProvider = ({ children }) => {
 };
 
 // 🔄 Custom hook to use authentication
-export default useAuth = () => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
