@@ -157,6 +157,14 @@ const SignIn = () => {
                 <Text style={styles.signUpText}>Sign Up</Text>
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/DashboardPage")}
+            >
+              <Text style={styles.signUpLink}>
+                Don’t have an account?{" "}
+                <Text style={styles.signUpText}>DAshbaord</Text>
+              </Text>
+            </TouchableOpacity>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

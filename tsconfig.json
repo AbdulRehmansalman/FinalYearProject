@@ -14,6 +14,8 @@
     "app/context/AuthContext.js",
     "app/firebase.js",
     "app/(tabs)/DashboardPage.jsx",
-    "app/(tabs)/DashboardPage.jsx"
+    "app/(tabs)/DashboardPage.jsx",
+    "app/_layout.jsx",
+    "app/(tabs)/_layout.jsx"
   ]
 }
