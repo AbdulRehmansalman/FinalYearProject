@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
       setUser(null);
       setRole(null);
+      navigation.replace("(auth)/SignIn");
     } catch (error) {
       console.error("Logout error:", error);
     }

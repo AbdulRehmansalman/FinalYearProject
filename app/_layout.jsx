@@ -17,6 +17,8 @@ const RootLayout = () => {
 
 export default RootLayout;
 
+// app/_layout.js
+
 // import React, { useEffect, useMemo } from "react";
 // import { Slot, useRouter, useSegments, usePathname } from "expo-router";
 // import { AuthProvider, useAuth } from "../context/authContext";
@@ -39,7 +41,7 @@ export default RootLayout;
 // import Icon from "react-native-vector-icons/MaterialIcons";
 // import { LinearGradient } from "expo-linear-gradient";
 
-// // ✅ Define tab configuration based on user roles
+// //  Define tab configuration based on user roles
 // const tabs = [
 //   {
 //     name: "Dashboard",
@@ -78,7 +80,7 @@ export default RootLayout;
 //   const isDetailPage = pathname.includes("AlertDetailPage");
 //   const showTabBar = user && !isAuthScreen && !isDetailPage;
 
-//   // ✅ Ensure navigation happens only when role is set
+//   //  Ensure navigation happens only when role is set
 //   useEffect(() => {
 //     if (!loading) {
 //       if (!user && !isAuthScreen) {
@@ -172,7 +174,7 @@ export default RootLayout;
 //   );
 // };
 
-// const RootLayout: React.FC = () => (
+// const RootLayout = () => (
 //   <AuthProvider>
 //     <LayoutContent />
 //   </AuthProvider>
