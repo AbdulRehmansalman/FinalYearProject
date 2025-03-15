@@ -15,7 +15,9 @@
     "app/firebase.js",
     "app/(tabs)/DashboardPage.jsx",
     "app/(tabs)/DashboardPage.jsx",
-    "app/_layout.jsx",
-    "app/(tabs)/_layout.jsx"
+    "app/_layout.tsx",
+    "app/(tabs)/_layout.jsx",
+    "components/BirdAnimation.js",
+    "app/index.jsx"
   ]
 }

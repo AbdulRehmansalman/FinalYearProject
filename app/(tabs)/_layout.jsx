@@ -90,7 +90,7 @@ const tabs = [
   },
   {
     name: "Settings",
-    path: "/Settings",
+    path: "/Setting",
     icon: "settings-outline",
     activeIcon: "settings",
     roles: ["admin"],
