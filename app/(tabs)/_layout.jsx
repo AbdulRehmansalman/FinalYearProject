@@ -50,7 +50,7 @@
 // });
 
 // export default TabLayout;
-
+//! Working cide
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Slot, useRouter, usePathname } from "expo-router";
 import { useAuth } from "../../context/authContext";
@@ -133,7 +133,7 @@ const TabsLayout = () => {
   return (
     <View style={styles.mainContainer}>
       <SafeAreaView style={styles.container} edges={["right", "left", "top"]}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={styles.contentContainer}>
           <Slot />
         </View>
@@ -176,7 +176,7 @@ const TabBar = ({ tabs, currentPath }) => {
                 key={tab.name}
                 onPress={() => handleTabPress(tab.path)}
                 style={styles.tabButton}
-                delayPressIn={0} // Removes press delay
+                delayPressIn={0}
               >
                 <Icon
                   name={isActive ? tab.activeIcon : tab.icon}
