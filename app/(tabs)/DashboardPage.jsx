@@ -1,3 +1,4 @@
+// !Working one
 // import React, { useState, useEffect, useCallback } from "react";
 // import {
 //   SafeAreaView,
@@ -23,25 +24,22 @@
 // import Icon from "react-native-vector-icons/Ionicons";
 // import { LineChart } from "react-native-chart-kit";
 // import { auth, db } from "../../services/firebase";
-// import { useAuth } from "../../context/authContext";
 // import {
 //   doc,
 //   onSnapshot,
 //   collection,
 //   query,
+//   where,
 //   orderBy,
 //   limit,
-//   where,
-//   getDocs, // Added for querying sensors
+//   Timestamp,
 // } from "firebase/firestore";
 // import { onAuthStateChanged } from "firebase/auth";
 
 // const { width } = Dimensions.get("window");
 
 // const DashboardPage = () => {
-//   const { logout } = useAuth();
 //   const [device, setDevice] = useState(null);
-//   // const [sensorReadings, setSensorReadings] = useState([]);
 //   const [alerts, setAlerts] = useState([]);
 //   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
 //   const [user, setUser] = useState(null);
@@ -53,7 +51,16 @@
 //     labels: [],
 //     datasets: [{ data: [] }],
 //   });
+//   const [tooltip, setTooltip] = useState({
+//     visible: false,
+//     x: 0,
+//     y: 0,
+//     value: 0,
+//     label: "",
+//   });
+
 //   const router = useRouter();
+
 //   const fabScale = useSharedValue(0.8);
 //   const fabStyle = useAnimatedStyle(() => ({
 //     transform: [{ scale: fabScale.value }],
@@ -67,7 +74,7 @@
 //     return new Date(timestamp);
 //   };
 
-//   // Format time for display (shorter format to avoid collision)
+//   // Format time for display
 //   const formatTime = (timestamp) => {
 //     if (!timestamp) return "N/A";
 
@@ -75,12 +82,12 @@
 //     if (!(date instanceof Date) || isNaN(date.getTime())) return "Invalid Date";
 
 //     return date.toLocaleTimeString([], {
-//       hour: "numeric", // Shorter format (e.g., "9:30" instead of "9:30 AM")
+//       hour: "numeric",
 //       minute: "2-digit",
 //     });
 //   };
 
-//   // Step 1: Get current user from Firebase Auth
+//   // Fetch current user
 //   const fetchCurrentUser = useCallback(() => {
 //     return onAuthStateChanged(auth, (firebaseUser) => {
 //       if (firebaseUser) {
@@ -96,7 +103,7 @@
 //     });
 //   }, []);
 
-//   // Step 2: Fetch user data from Firestore
+//   // Fetch user data
 //   const fetchUserData = useCallback((uid) => {
 //     try {
 //       const userRef = doc(db, "users", uid);
@@ -112,28 +119,29 @@
 //         },
 //         (error) => {
 //           console.error("Error fetching user data:", error);
-//           setError("Failed to load user data.");
+//           setError("Failed to load user data. Please try again.");
 //         }
 //       );
 //     } catch (error) {
 //       console.error("Error in fetchUserData:", error);
-//       setError("Failed to fetch user data.");
+//       setError("Failed to fetch user data. Please try again.");
 //     }
 //   }, []);
 
-//   // Step 3: Fetch the first device for the user
+//   // Fetch the first device
 //   const fetchDeviceId = useCallback(() => {
 //     try {
-//       const devicesQuery = query(collection(db, "devices"), limit(1));
+//       const devicesQuery = query(collection(db, "devices"));
 //       return onSnapshot(
 //         devicesQuery,
 //         (querySnapshot) => {
 //           if (!querySnapshot.empty) {
 //             const deviceDoc = querySnapshot.docs[0];
 //             const deviceData = deviceDoc.data();
-//             setSelectedDeviceId(deviceData.deviceId || deviceDoc.id);
+//             const deviceId = deviceData.deviceId || deviceDoc.id;
+//             setSelectedDeviceId(deviceId);
 //             setDevice({ id: deviceDoc.id, ...deviceData });
-//             console.log("Selected Device ID:", selectedDeviceId);
+//             console.log("Selected Device ID:", deviceId);
 //           } else {
 //             setSelectedDeviceId(null);
 //             setDevice(null);
@@ -142,184 +150,30 @@
 //         },
 //         (error) => {
 //           console.error("Error fetching devices:", error);
-//           setError("Failed to load device data.");
+//           setError("Failed to load device data. Please try again.");
 //         }
 //       );
 //     } catch (error) {
 //       console.error("Error in fetchDeviceId:", error);
-//       setError("Failed to fetch device ID.");
+//       setError("Failed to fetch device ID. Please try again.");
 //     }
 //   }, []);
 
-//   // Step 4: Fetch sensor data based on selectedDeviceId
-//   // const fetchSensorData = useCallback(() => {
-//   //   let unsubscribeSensors = () => {};
-
-//   //   const detectAndFetchSensorData = async () => {
-//   //     if (!selectedDeviceId) {
-//   //       console.log("No selectedDeviceId available to fetch sensor data.");
-//   //       setSelectedDeviceId("pi_unit_001");
-//   //       console.log("Fallback selectedDeviceId set to:", "pi_unit_001");
-//   //       return;
-//   //     }
-
-//   //     try {
-//   //       console.log("Fetching sensor data for deviceId:", selectedDeviceId);
-//   //       const sensorsRef = collection(db, "sensors");
-//   //       const q = query(sensorsRef, where("deviceId", "==", selectedDeviceId));
-//   //       const querySnapshot = await getDocs(q);
-
-//   //       if (!querySnapshot.empty) {
-//   //         const sensorDoc = querySnapshot.docs[0];
-//   //         const sensorId = sensorDoc.id;
-//   //         console.log("Matched document ID:", sensorId);
-
-//   //         unsubscribeSensors = onSnapshot(
-//   //           doc(db, "sensors", sensorId),
-//   //           (sensorSnap) => {
-//   //             if (sensorSnap.exists()) {
-//   //               const sensorData = sensorSnap.data();
-//   //               console.log("Raw Sensor Data:", sensorData);
-
-//   //               if (!sensorData.sensorReading) {
-//   //                 console.warn(
-//   //                   "No sensorReading field in sensor data for deviceId:",
-//   //                   selectedDeviceId
-//   //                 );
-//   //                 setSensorReadings([]);
-//   //                 return;
-//   //               }
-
-//   //               const readings = [
-//   //                 ...(sensorData.sensorReading?.camera
-//   //                   ? [{ type: "camera", ...sensorData.sensorReading.camera }]
-//   //                   : []),
-//   //                 ...(sensorData.sensorReading?.gsm
-//   //                   ? [{ type: "gsm", ...sensorData.sensorReading.gsm }]
-//   //                   : []),
-//   //                 ...(sensorData.sensorReading?.motion
-//   //                   ? [{ type: "motion", ...sensorData.sensorReading.motion }]
-//   //                   : []),
-//   //                 ...(sensorData.sensorReading?.smoke
-//   //                   ? [{ type: "smoke", ...sensorData.sensorReading.smoke }]
-//   //                   : []),
-//   //                 ...(sensorData.sensorReading?.sound
-//   //                   ? [{ type: "sound", ...sensorData.sensorReading.sound }]
-//   //                   : []),
-//   //                 ...(sensorData.sensorReading?.wifi
-//   //                   ? [{ type: "wifi", ...sensorData.sensorReading.wifi }]
-//   //                   : []),
-//   //               ]
-//   //                 .filter((r) => {
-//   //                   const hasTimestamp = !!r.last_updated;
-//   //                   const hasValue =
-//   //                     r.level != null ||
-//   //                     r.value != null ||
-//   //                     r.signal_strength != null ||
-//   //                     r.status != null;
-//   //                   console.log(
-//   //                     `Filtering reading for ${r.type}: hasTimestamp=${hasTimestamp}, hasValue=${hasValue}`,
-//   //                     r
-//   //                   );
-//   //                   return hasTimestamp && hasValue;
-//   //                 })
-//   //                 .sort(
-//   //                   (a, b) =>
-//   //                     convertFirestoreTimestamp(b.last_updated) -
-//   //                     convertFirestoreTimestamp(a.last_updated)
-//   //                 );
-
-//   //               if (readings.length > 0) {
-//   //                 setSensorReadings(readings);
-//   //               } else {
-//   //                 console.warn(
-//   //                   "No valid readings after processing for deviceId:",
-//   //                   selectedDeviceId
-//   //                 );
-//   //                 setSensorReadings([]);
-//   //               }
-//   //             } else {
-//   //               setSensorReadings([]);
-//   //               console.warn(
-//   //                 "No sensor data found for deviceId:",
-//   //                 selectedDeviceId
-//   //               );
-//   //             }
-//   //           },
-//   //           (error) => {
-//   //             console.error("Error fetching sensor data:", error.message);
-//   //             setError("Failed to load sensor data.");
-//   //           }
-//   //         );
-//   //       } else {
-//   //         console.warn(
-//   //           "No document found matching deviceId:",
-//   //           selectedDeviceId
-//   //         );
-//   //         setSensorReadings([]);
-//   //       }
-//   //     } catch (error) {
-//   //       console.error("Error in fetchSensorData:", error.message);
-//   //       setError("Failed to fetch sensor data.");
-//   //     }
-
-//   //     return () => unsubscribeSensors();
-//   //   };
-
-//   //   detectAndFetchSensorData();
-//   // }, [selectedDeviceId]);
-
-//   //!Previous  Step 5: Fetch alerts
-//   // const fetchAlerts = useCallback(() => {
-//   //   try {
-//   //     const alertsQuery = query(
-//   //       collection(db, "alerts"),
-//   //       orderBy("occur_at", "desc"),
-//   //       limit(5)
-//   //     );
-//   //     return onSnapshot(
-//   //       alertsQuery,
-//   //       (querySnapshot) => {
-//   //         console.log("Snapshot received:", querySnapshot.docs.length);
-//   //         const alertsList = querySnapshot.docs.map((doc) => ({
-//   //           id: doc.id,
-//   //           ...doc.data(),
-//   //         }));
-//   //         setAlerts(alertsList);
-//   //         console.log("Alerts List:", alertsList);
-
-//   //         const stats = alertsList.reduce(
-//   //           (acc, alert) => {
-//   //             const alertStatus = alert.status || "pending";
-//   //             if (alertStatus === "pending") acc.pending++;
-//   //             else if (alertStatus === "approved") acc.approved++;
-//   //             else if (alertStatus === "rejected") acc.rejected++;
-//   //             return acc;
-//   //           },
-//   //           { pending: 0, approved: 0, rejected: 0 }
-//   //         );
-//   //         setStats(stats);
-//   //         console.log("The stats are:", stats);
-//   //       },
-//   //       (error) => {
-//   //         console.error("Error fetching alerts:", error);
-//   //         setError("Failed to load alerts.");
-//   //       }
-//   //     );
-//   //   } catch (error) {
-//   //     console.error("Error in fetchAlerts:", error);
-//   //     setError("Failed to fetch alerts.");
-//   //   }
-//   // }, []);
+//   // Fetch alerts
 //   const fetchAlerts = useCallback(() => {
 //     try {
+//       const now = new Date();
 //       const startTime = new Date();
-//       startTime.setHours(startTime.getHours() - 1); // Last 1 hour
+//       startTime.setUTCHours(startTime.getUTCHours() - 24); // Last 24 hours in UTC
+
+//       console.log("Current time (UTC):", now.toISOString());
+//       console.log("Start time (UTC):", startTime.toISOString());
 
 //       const alertsQuery = query(
 //         collection(db, "alerts"),
-//         where("occur_at", ">=", startTime), // Assumes occur_at is a Timestamp or Date
-//         orderBy("occur_at", "desc")
+//         where("occur_at", ">=", startTime),
+//         orderBy("occur_at", "desc"),
+//         limit(5)
 //       );
 
 //       return onSnapshot(
@@ -328,28 +182,30 @@
 //           console.log("Snapshot received:", querySnapshot.docs.length);
 //           const alertsList = querySnapshot.docs.map((doc) => {
 //             const data = doc.data();
-//             // Ensure occur_at is converted to a Date object if it's a Timestamp
 //             const occurAt =
-//               data.occur_at instanceof firebase.firestore.Timestamp
+//               data.occur_at instanceof Timestamp
 //                 ? data.occur_at.toDate()
 //                 : convertFirestoreTimestamp(data.occur_at);
+
+//             console.log(
+//               `Alert ${doc.id} occur_at (UTC):`,
+//               occurAt.toISOString()
+//             );
 
 //             return {
 //               id: doc.id,
 //               occur_at: occurAt,
-//               status: data.status || "pending", // Default to "pending" if status is missing
-//               detections: data.detections || {}, // Default to empty object if detections is missing
+//               status: data.status || "pending",
+//               detections: data.detections || {},
 //             };
 //           });
 
-//           // Limit to the last 5 alerts for the Recent Alerts section
-//           setAlerts(alertsList.slice(0, 5));
+//           setAlerts(alertsList);
 //           console.log("Alerts List:", alertsList);
 
-//           // Calculate alert statistics
 //           const stats = alertsList.reduce(
 //             (acc, alert) => {
-//               const alertStatus = alert.status || "pending"; // Fallback to "pending"
+//               const alertStatus = alert.status || "pending";
 //               if (alertStatus === "pending") acc.pending++;
 //               else if (alertStatus === "approved") acc.approved++;
 //               else if (alertStatus === "rejected") acc.rejected++;
@@ -360,7 +216,6 @@
 //           setStats(stats);
 //           console.log("The stats are:", stats);
 
-//           // Group alerts by hour for the Alert Trends Chart
 //           const alertTrends = {};
 //           alertsList.forEach((alert) => {
 //             if (alert.occur_at) {
@@ -371,11 +226,9 @@
 //             }
 //           });
 
-//           // Prepare data for the Alert Trends Chart (last 12 hours)
 //           const trendLabels = [];
 //           const trendData = [];
-//           const now = new Date();
-//           for (let i = 11; i >= 0; i--) {
+//           for (let i = 1; i >= 0; i--) {
 //             const hourDate = new Date(now.getTime() - i * 60 * 60 * 1000);
 //             const hour = hourDate.toLocaleTimeString([], { hour: "numeric" });
 //             trendLabels.push(hour);
@@ -396,23 +249,32 @@
 //         },
 //         (error) => {
 //           console.error("Error fetching alerts:", error);
-//           setError("Failed to load alerts.");
+//           if (
+//             error.code === "failed-precondition" &&
+//             error.message.includes("index")
+//           ) {
+//             setError(
+//               "Firestore query requires an index. Please create an index for 'occur_at' and 'desc' order in Firestore. See console for details or visit: " +
+//                 (error.message.match(/https:\/\/[^ ]+/)?.[0] ||
+//                   "Firestore Console")
+//             );
+//           } else {
+//             setError("Failed to load alerts: " + error.message);
+//           }
 //         }
 //       );
 //     } catch (error) {
 //       console.error("Error in fetchAlerts:", error);
-//       setError("Failed to fetch alerts.");
+//       setError("Failed to fetch alerts: " + error.message);
 //     }
 //   }, []);
 
-//   // Step 6: Set up effect to fetch all data
 //   useEffect(() => {
 //     setLoading(true);
 //     setError(null);
 
 //     const unsubscribeAuth = fetchCurrentUser();
 //     const unsubscribeDevices = fetchDeviceId();
-//     // const unsubscribeSensors = fetchSensorData();
 //     const unsubscribeAlerts = fetchAlerts();
 
 //     fabScale.value = withTiming(1, { duration: 500 });
@@ -421,57 +283,13 @@
 //     return () => {
 //       unsubscribeAuth?.();
 //       unsubscribeDevices?.();
-//       // unsubscribeSensors?.();
 //       unsubscribeAlerts?.();
 //     };
-//     // }, [fetchCurrentUser, fetchDeviceId, fetchSensorData, fetchAlerts]);
 //   }, [fetchCurrentUser, fetchDeviceId, fetchAlerts]);
-
-//   // Chart data with validation and custom label formatting
-//   // const chartData =
-//   //   sensorReadings && sensorReadings.length > 0
-//   //     ? {
-//   //         labels: sensorReadings
-//   //           .map((reading, index) =>
-//   //             index % 2 === 0 ? formatTime(reading.last_updated) : ""
-//   //           ) // Show every other label to avoid collision
-//   //           .slice(0, 10)
-//   //           .reverse(),
-//   //         datasets: [
-//   //           {
-//   //             data: sensorReadings
-//   //               .map((reading) => {
-//   //                 const value =
-//   //                   reading.type === "smoke"
-//   //                     ? reading.level || 0
-//   //                     : reading.type === "motion" &&
-//   //                       reading.status === "detected"
-//   //                     ? 1
-//   //                     : reading.type === "motion" &&
-//   //                       reading.status !== "detected"
-//   //                     ? 0
-//   //                     : reading.type === "sound"
-//   //                     ? reading.value || 0
-//   //                     : reading.type === "gsm"
-//   //                     ? reading.signal_strength || 0
-//   //                     : 0;
-//   //                 console.log(`Chart data for ${reading.type}: ${value}`);
-//   //                 return isFinite(value) ? value : 0;
-//   //               })
-//   //               .slice(0, 10)
-//   //               .reverse(),
-//   //             color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-//   //             strokeWidth: 2,
-//   //           },
-//   //         ],
-//   //         legend: ["Sensor Activity"],
-//   //       }
-//   //     : { labels: [], datasets: [{ data: [] }] };
 
 //   const dashboardData = [
 //     { type: "header", id: "header" },
 //     { type: "deviceStatus", id: "deviceStatus", data: device },
-//     // { type: "sensorChart", id: "sensorChart", data: chartData },
 //     { type: "alertTrendsChart", id: "alertTrendsChart", data: alertTrendsData },
 //     { type: "alertStats", id: "alertStats", data: stats },
 //     { type: "recentAlerts", id: "recentAlerts", data: alerts },
@@ -484,13 +302,8 @@
 //         return (
 //           <LinearGradient colors={["#4CAF50", "#388E3C"]} style={styles.header}>
 //             <Text style={styles.headerTitle}>Wildlife Dashboard</Text>
-//             <TouchableOpacity>
-//               <Icon
-//                 name="log-out-outline"
-//                 size={24}
-//                 color="#fff"
-//                 onPress={logout}
-//               />
+//             <TouchableOpacity onPress={() => router.replace("/(auth)/SignIn")}>
+//               <Icon name="log-out-outline" size={24} color="#fff" />
 //             </TouchableOpacity>
 //           </LinearGradient>
 //         );
@@ -534,92 +347,81 @@
 //             )}
 //           </Animated.View>
 //         );
-//       // case "sensorChart":
-//       //   return (
-//       //     <Animated.View
-//       //       entering={SlideInRight.duration(800)}
-//       //       style={styles.card}
-//       //     >
-//       //       <View style={styles.cardHeader}>
-//       //         <Text style={styles.cardTitle}>Sensor Activity</Text>
-//       //         <Icon name="analytics" size={20} color="#4CAF50" />
-//       //       </View>
-//       //       {sensorReadings.length > 0 ? (
-//       //         <LineChart
-//       //           data={chartData}
-//       //           width={width - 40} // Adjusted width with padding
-//       //           height={200}
-//       //           yAxisLabel=""
-//       //           yAxisSuffix=""
-//       //           chartConfig={{
-//       //             backgroundColor: "#1a1a1a",
-//       //             backgroundGradientFrom: "#1a1a1a",
-//       //             backgroundGradientTo: "#1a1a1a",
-//       //             decimalPlaces: 1,
-//       //             color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-//       //             labelColor: (opacity = 1) => `silver`,
-//       //             style: { borderRadius: 16 },
-//       //             propsForDots: { r: "4", strokeWidth: "0", stroke: "#4CAF50" },
-//       //             // Optional: Adjust label spacing or rotation if needed
-//       //             labelOffset: 7, // Adds slight spacing between labels
-//       //           }}
-//       //           bezier
-//       //           style={styles.chart}
-//       //         />
-//       //       ) : (
-//       //         <Text style={styles.emptyText}>No sensor data available</Text>
-//       //       )}
-//       //       <Text style={styles.chartLabel}>
-//       //         Last 10 Readings (Motion/Smoke/Sound/GSM)
-//       //       </Text>
-//       //     </Animated.View>
-//       //   );
 //       case "alertTrendsChart":
 //         return (
 //           <Animated.View
 //             entering={SlideInRight.duration(800)}
-//             style={styles.card} // ✅ Removed `chartStyle`
+//             style={styles.card}
 //           >
 //             <View style={styles.cardHeader}>
-//               <Text style={styles.cardTitle}>Alert Trends (Last 24 Hours)</Text>
+//               <Text style={styles.cardTitle}>Alert Trends (Last 1 Hour)</Text>
 //               <Icon name="trending-up" size={20} color="#FF9800" />
 //             </View>
 //             {item.data.labels.length > 0 ? (
-//               <LineChart
-//                 data={item.data}
-//                 width={width - 40}
-//                 height={200}
-//                 yAxisLabel=""
-//                 yAxisSuffix=""
-//                 chartConfig={{
-//                   backgroundColor: "#1a1a1a",
-//                   backgroundGradientFrom: "#1a1a1a",
-//                   backgroundGradientTo: "#1a1a1a",
-//                   decimalPlaces: 0,
-//                   color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
-//                   labelColor: (opacity = 1) => `silver`,
-//                   style: { borderRadius: 16 },
-//                   propsForDots: { r: "4", strokeWidth: "2", stroke: "#FF9800" },
-//                   labelOffset: 7,
-//                 }}
-//                 bezier
-//                 style={styles.chart}
-//                 onDataPointClick={({ value, dataset, index }) => {
-//                   const hour = item.data.labels[index];
-//                   Alert.alert(
-//                     "Alert Details",
-//                     `Hour: ${hour}\nNumber of Alerts: ${value}`,
-//                     [{ text: "OK", onPress: () => console.log("Alert closed") }]
-//                   );
-//                 }}
-//               />
+//               <View style={styles.chartContainer}>
+//                 <LineChart
+//                   data={item.data}
+//                   width={width - 40}
+//                   height={220}
+//                   yAxisLabel=""
+//                   yAxisSuffix=""
+//                   chartConfig={{
+//                     backgroundGradientFrom: "#1e1e1e",
+//                     backgroundGradientTo: "#2d2d2d",
+//                     color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`,
+//                     labelColor: (opacity = 1) =>
+//                       `rgba(255, 255, 255, ${opacity})`,
+//                     strokeWidth: 3,
+//                     propsForDots: {
+//                       r: "6",
+//                       strokeWidth: "2",
+//                       stroke: "#FF9800",
+//                       fill: "white",
+//                     },
+//                     propsForBackgroundLines: { stroke: "#444" },
+//                     decimalPlaces: 0,
+//                     style: {
+//                       borderRadius: 16,
+//                       paddingRight: 10,
+//                     },
+//                   }}
+//                   bezier
+//                   style={styles.chart}
+//                   onDataPointClick={({ value, dataset, index, x, y }) => {
+//                     setTooltip({
+//                       visible: true,
+//                       x: x + 10,
+//                       y: y - 40,
+//                       value,
+//                       label: item.data.labels[index],
+//                     });
+//                     setTimeout(
+//                       () => setTooltip({ ...tooltip, visible: false }),
+//                       2000
+//                     );
+//                   }}
+//                 />
+//                 {tooltip.visible && (
+//                   <Animated.View
+//                     entering={FadeIn.duration(200)}
+//                     exiting={FadeIn.duration(200)}
+//                     style={[
+//                       styles.tooltip,
+//                       { left: tooltip.x, top: tooltip.y },
+//                     ]}
+//                   >
+//                     <Text style={styles.tooltipText}>
+//                       {`Hour: ${tooltip.label}\nAlerts: ${tooltip.value}`}
+//                     </Text>
+//                   </Animated.View>
+//                 )}
+//               </View>
 //             ) : (
 //               <Text style={styles.emptyText}>No alert trends available</Text>
 //             )}
-//             <Text style={styles.chartLabel}>Tap on points to see details</Text>
+//             <Text style={styles.chartLabel}>Tap points for details</Text>
 //           </Animated.View>
 //         );
-
 //       case "alertStats":
 //         return (
 //           <Animated.View entering={FadeIn.duration(1000)} style={styles.card}>
@@ -631,7 +433,7 @@
 //               <View
 //                 style={[
 //                   styles.statItem,
-//                   { backgroundColor: "rgba(255, 193, 7, 0.2)" },
+//                   { backgroundColor: "rgba(255, 152, 0, 0.2)" },
 //                 ]}
 //               >
 //                 <Text style={styles.statNumber}>{item.data.pending}</Text>
@@ -666,58 +468,76 @@
 //               <Icon name="notifications" size={20} color="#4CAF50" />
 //             </View>
 //             {item.data.length > 0 ? (
-//               item.data.map((alert) => (
-//                 <TouchableOpacity
-//                   key={alert.id}
-//                   style={styles.alertCard}
-//                   onPress={() =>
-//                     router.push({
-//                       pathname: "/(tabs)/AlertDetailPage",
-//                       params: { alertId: alert.id },
-//                     })
-//                   }
-//                 >
-//                   <Animated.View entering={SlideInRight}>
-//                     <View style={styles.alertHeader}>
-//                       <Text style={styles.alertTime}>
-//                         {alert.occur_at ? formatTime(alert.occur_at) : "N/A"}
-//                       </Text>
-//                       <Text
-//                         style={[
-//                           styles.alertStatus,
-//                           {
-//                             color:
-//                               (alert.status || "pending") === "pending"
-//                                 ? "#FF9800"
-//                                 : (alert.status || "pending") === "approved"
-//                                 ? "#4CAF50"
-//                                 : "#D32F2F",
-//                           },
-//                         ]}
-//                       >
-//                         {alert.status || "pending"}
-//                       </Text>
-//                     </View>
-//                     <Text style={styles.alertDetails}>
-//                       {alert.detections?.sound?.detected &&
-//                         `Sound (${alert.detections.sound.type}): ${(
-//                           alert.detections.sound.confidence * 100
-//                         ).toFixed(0)}%`}
-//                       {alert.detections?.image?.detected &&
-//                         `, Image (${alert.detections.image.type}): ${(
-//                           alert.detections.image.confidence * 100
-//                         ).toFixed(0)}%`}
-//                       {alert.detections?.smoke?.detected &&
-//                         `, Smoke: ${alert.detections.smoke.level}`}
-//                     </Text>
-//                     {alert.detections?.image?.imageUrl && (
-//                       <Text style={styles.alertDetails}>
-//                         Image: {alert.detections.image.imageUrl}
-//                       </Text>
-//                     )}
-//                   </Animated.View>
-//                 </TouchableOpacity>
-//               ))
+//               item.data.map((alert) => {
+//                 const detectionDetails = [];
+//                 if (alert.detections?.sound?.detected) {
+//                   const soundConfidence = parseFloat(
+//                     alert.detections.sound.confidence
+//                   );
+//                   detectionDetails.push(
+//                     `Sound (${alert.detections.sound.type}): ${(
+//                       soundConfidence * 100
+//                     ).toFixed(0)}%`
+//                   );
+//                 }
+//                 if (alert.detections?.image?.detected) {
+//                   detectionDetails.push(
+//                     `Image (${alert.detections.image.type}): ${(
+//                       alert.detections.image.confidence * 100
+//                     ).toFixed(0)}%`
+//                   );
+//                 }
+//                 if (alert.detections?.smoke?.detected) {
+//                   detectionDetails.push(
+//                     `Smoke: ${alert.detections.smoke.level}`
+//                   );
+//                 }
+//                 const detectionText = detectionDetails.join(", ");
+
+//                 return (
+//                   <TouchableOpacity
+//                     key={alert.id}
+//                     style={styles.alertCard}
+//                     onPress={() =>
+//                       router.push({
+//                         pathname: "/(tabs)/AlertDetailPage",
+//                         params: { alertId: alert.id },
+//                       })
+//                     }
+//                   >
+//                     <Animated.View entering={SlideInRight}>
+//                       <View style={styles.alertHeader}>
+//                         <Text style={styles.alertTime}>
+//                           {alert.occur_at ? formatTime(alert.occur_at) : "N/A"}
+//                         </Text>
+//                         <Text
+//                           style={[
+//                             styles.alertStatus,
+//                             {
+//                               color:
+//                                 (alert.status || "pending") === "pending"
+//                                   ? "#FF9800"
+//                                   : (alert.status || "pending") === "approved"
+//                                   ? "#4CAF50"
+//                                   : "#D32F2F",
+//                             },
+//                           ]}
+//                         >
+//                           {alert.status || "pending"}
+//                         </Text>
+//                       </View>
+//                       {detectionText ? (
+//                         <Text style={styles.alertDetails}>{detectionText}</Text>
+//                       ) : null}
+//                       {alert.detections?.image?.imageUrl && (
+//                         <Text style={styles.alertDetails}>
+//                           Image: {alert.detections.image.imageUrl}
+//                         </Text>
+//                       )}
+//                     </Animated.View>
+//                   </TouchableOpacity>
+//                 );
+//               })
 //             ) : (
 //               <Text style={styles.emptyText}>No recent alerts</Text>
 //             )}
@@ -743,6 +563,7 @@
 //           </View>
 //         );
 //       default:
+//         console.warn("Unexpected item type in dashboardData:", item.type);
 //         return null;
 //     }
 //   };
@@ -769,7 +590,6 @@
 //             setError(null);
 //             fetchCurrentUser();
 //             fetchDeviceId();
-//             // fetchSensorData();
 //             fetchAlerts();
 //           }}
 //         >
@@ -794,7 +614,10 @@
 // };
 
 // const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: "#121212" },
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#121212",
+//   },
 //   loadingContainer: {
 //     flex: 1,
 //     justifyContent: "center",
@@ -806,6 +629,7 @@
 //     marginTop: 15,
 //     fontSize: 16,
 //     fontFamily: "System",
+//     textAlign: "center",
 //   },
 //   retryButton: {
 //     backgroundColor: "#4CAF50",
@@ -813,7 +637,12 @@
 //     borderRadius: 8,
 //     marginTop: 15,
 //   },
-//   retryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+//   retryText: {
+//     color: "#fff",
+//     fontSize: 16,
+//     fontWeight: "600",
+//     textAlign: "center",
+//   },
 //   header: {
 //     padding: 20,
 //     paddingTop: Platform.OS === "ios" ? 10 : 40,
@@ -829,7 +658,9 @@
 //         shadowOpacity: 0.3,
 //         shadowRadius: 6,
 //       },
-//       android: { elevation: 6 },
+//       android: {
+//         elevation: 6,
+//       },
 //     }),
 //   },
 //   headerTitle: {
@@ -838,7 +669,10 @@
 //     fontWeight: "bold",
 //     fontFamily: "System",
 //   },
-//   listContent: { padding: 15, paddingBottom: 100 },
+//   listContent: {
+//     padding: 15,
+//     paddingBottom: 100,
+//   },
 //   card: {
 //     backgroundColor: "#1e1e1e",
 //     borderRadius: 16,
@@ -851,7 +685,9 @@
 //         shadowOpacity: 0.2,
 //         shadowRadius: 4,
 //       },
-//       android: { elevation: 4 },
+//       android: {
+//         elevation: 4,
+//       },
 //     }),
 //   },
 //   cardHeader: {
@@ -872,7 +708,11 @@
 //     alignItems: "center",
 //     marginBottom: 8,
 //   },
-//   statusLabel: { color: "#fff", fontSize: 16, fontWeight: "600" },
+//   statusLabel: {
+//     color: "#fff",
+//     fontSize: 16,
+//     fontWeight: "600",
+//   },
 //   statusIndicator: {
 //     paddingVertical: 4,
 //     paddingHorizontal: 8,
@@ -884,9 +724,15 @@
 //     fontWeight: "bold",
 //     textTransform: "uppercase",
 //   },
-//   statusDetail: { color: "#bbb", fontSize: 14 },
-//   chart: {
+//   statusDetail: {
+//     color: "#bbb",
+//     fontSize: 14,
+//   },
+//   chartContainer: {
+//     position: "relative",
 //     marginVertical: 8,
+//   },
+//   chart: {
 //     borderRadius: 16,
 //     alignSelf: "center",
 //   },
@@ -907,8 +753,16 @@
 //     padding: 12,
 //     borderRadius: 12,
 //   },
-//   statNumber: { color: "#fff", fontSize: 24, fontWeight: "bold" },
-//   statLabel: { color: "#bbb", fontSize: 14, marginTop: 4 },
+//   statNumber: {
+//     color: "#fff",
+//     fontSize: 24,
+//     fontWeight: "bold",
+//   },
+//   statLabel: {
+//     color: "#bbb",
+//     fontSize: 14,
+//     marginTop: 4,
+//   },
 //   alertCard: {
 //     backgroundColor: "#2d2d2d",
 //     borderRadius: 12,
@@ -921,9 +775,19 @@
 //     alignItems: "center",
 //     marginBottom: 8,
 //   },
-//   alertTime: { color: "#fff", fontSize: 14 },
-//   alertStatus: { fontSize: 14, fontWeight: "500", textTransform: "capitalize" },
-//   alertDetails: { color: "#999", fontSize: 12 },
+//   alertTime: {
+//     color: "#fff",
+//     fontSize: 14,
+//   },
+//   alertStatus: {
+//     fontSize: 14,
+//     fontWeight: "500",
+//     textTransform: "capitalize",
+//   },
+//   alertDetails: {
+//     color: "#999",
+//     fontSize: 12,
+//   },
 //   emptyText: {
 //     color: "#999",
 //     fontSize: 16,
@@ -948,7 +812,9 @@
 //         shadowOpacity: 0.2,
 //         shadowRadius: 4,
 //       },
-//       android: { elevation: 4 },
+//       android: {
+//         elevation: 4,
+//       },
 //     }),
 //   },
 //   quickActionText: {
@@ -957,33 +823,23 @@
 //     marginLeft: 8,
 //     fontWeight: "600",
 //   },
-//   fab: {
+//   tooltip: {
 //     position: "absolute",
-//     bottom: 20,
-//     right: 20,
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: "#000",
-//         shadowOffset: { width: 0, height: 4 },
-//         shadowOpacity: 0.3,
-//         shadowRadius: 6,
-//       },
-//       android: { elevation: 8 },
-//     }),
+//     backgroundColor: "rgba(0, 0, 0, 0.8)",
+//     padding: 8,
+//     borderRadius: 8,
+//     zIndex: 10,
 //   },
-//   fabButton: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#4CAF50",
-//     borderRadius: 12,
-//     padding: 12,
+//   tooltipText: {
+//     color: "#fff",
+//     fontSize: 12,
+//     fontWeight: "600",
 //   },
-//   fabText: { color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 8 },
 // });
 
 // export default DashboardPage;
-
-import React, { useState, useEffect, useCallback } from "react";
+//! newn ew one
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -1019,6 +875,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
@@ -1044,6 +901,7 @@ const DashboardPage = () => {
   });
 
   const router = useRouter();
+  const unsubscribeRef = useRef({ auth: null, devices: null, alerts: null });
 
   const fabScale = useSharedValue(0.8);
   const fabStyle = useAnimatedStyle(() => ({
@@ -1052,103 +910,164 @@ const DashboardPage = () => {
 
   // Convert Firestore timestamp to Date
   const convertFirestoreTimestamp = (timestamp) => {
-    if (!timestamp) return new Date();
-    if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
-    if (timestamp.toDate) return timestamp.toDate();
-    return new Date(timestamp);
+    if (!timestamp) {
+      console.warn("Timestamp is null or undefined");
+      return null;
+    }
+    try {
+      if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+      }
+      if (
+        timestamp.seconds &&
+        typeof timestamp.seconds === "number" &&
+        (timestamp.nanoseconds || timestamp.nanoseconds === 0)
+      ) {
+        return new Date(
+          timestamp.seconds * 1000 +
+            Math.floor((timestamp.nanoseconds || 0) / 1e6)
+        );
+      }
+      if (timestamp instanceof Date) {
+        return timestamp;
+      }
+      const date = new Date(timestamp);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+      console.warn("Invalid timestamp format:", timestamp);
+      return null;
+    } catch (error) {
+      console.error("Error converting timestamp:", error, timestamp);
+      return null;
+    }
   };
 
   // Format time for display
   const formatTime = (timestamp) => {
-    if (!timestamp) return "N/A";
-
     const date = convertFirestoreTimestamp(timestamp);
-    if (!(date instanceof Date) || isNaN(date.getTime())) return "Invalid Date";
-
-    return date.toLocaleTimeString([], {
-      hour: "numeric",
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return "N/A";
+    }
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
     });
   };
 
   // Fetch current user
   const fetchCurrentUser = useCallback(() => {
-    return onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setCurrentUserId(firebaseUser.uid);
-        fetchUserData(firebaseUser.uid);
-        console.log("Current User ID:", firebaseUser.uid);
-      } else {
-        setCurrentUserId(null);
-        setUser(null);
-        setError("No authenticated user found. Please log in.");
-        router.replace("/(auth)/SignIn");
+    if (!auth) {
+      setError("Firebase auth not initialized.");
+      return () => {};
+    }
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => {
+        if (firebaseUser) {
+          setCurrentUserId(firebaseUser.uid);
+          fetchUserData(firebaseUser.uid);
+          console.log("Current User ID:", firebaseUser.uid);
+        } else {
+          setCurrentUserId(null);
+          setUser(null);
+          setError("No authenticated user found. Please log in.");
+          router.replace("/(auth)/SignIn");
+        }
+      },
+      (error) => {
+        console.error("Auth state change error:", error);
+        setError("Failed to authenticate user: " + error.message);
       }
-    });
+    );
+    unsubscribeRef.current.auth = unsubscribe;
+    return unsubscribe;
   }, []);
 
   // Fetch user data
   const fetchUserData = useCallback((uid) => {
-    try {
-      const userRef = doc(db, "users", uid);
-      return onSnapshot(
-        userRef,
-        (docSnap) => {
-          if (docSnap.exists()) {
-            setUser(docSnap.data());
-          } else {
-            setUser(null);
-            console.warn("User data not found for uid:", uid);
-          }
-        },
-        (error) => {
-          console.error("Error fetching user data:", error);
-          setError("Failed to load user data. Please try again.");
-        }
-      );
-    } catch (error) {
-      console.error("Error in fetchUserData:", error);
-      setError("Failed to fetch user data. Please try again.");
+    if (!db) {
+      setError("Firestore db not initialized.");
+      return () => {};
     }
+    const userRef = doc(db, "users", uid);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUser(docSnap.data());
+        } else {
+          setUser(null);
+          console.warn("User data not found for uid:", uid);
+        }
+      },
+      (error) => {
+        console.error("Error fetching user data:", error);
+        setError("Failed to load user data: " + error.message);
+      }
+    );
+    unsubscribeRef.current.user = unsubscribe;
+    return unsubscribe;
   }, []);
 
   // Fetch the first device
   const fetchDeviceId = useCallback(() => {
-    try {
-      const devicesQuery = query(collection(db, "devices"));
-      return onSnapshot(
-        devicesQuery,
-        (querySnapshot) => {
-          if (!querySnapshot.empty) {
-            const deviceDoc = querySnapshot.docs[0];
-            const deviceData = deviceDoc.data();
-            const deviceId = deviceData.deviceId || deviceDoc.id;
-            setSelectedDeviceId(deviceId);
-            setDevice({ id: deviceDoc.id, ...deviceData });
-            console.log("Selected Device ID:", deviceId);
-          } else {
-            setSelectedDeviceId(null);
-            setDevice(null);
-            console.warn("No devices found.");
-          }
-        },
-        (error) => {
-          console.error("Error fetching devices:", error);
-          setError("Failed to load device data. Please try again.");
-        }
-      );
-    } catch (error) {
-      console.error("Error in fetchDeviceId:", error);
-      setError("Failed to fetch device ID. Please try again.");
+    if (!db) {
+      setError("Firestore db not initialized.");
+      return () => {};
     }
+
+    const devicesQuery = query(collection(db, "devices"));
+    const unsubscribe = onSnapshot(
+      devicesQuery,
+      async (querySnapshot) => {
+        if (!querySnapshot.empty) {
+          const deviceDoc = querySnapshot.docs[0];
+          const deviceData = deviceDoc.data();
+          const deviceId = deviceData.deviceId || deviceDoc.id;
+
+          setSelectedDeviceId(deviceId);
+          setDevice({ id: deviceDoc.id, ...deviceData });
+
+          console.log("Selected Device ID:", deviceId);
+
+          // Store deviceId in AsyncStorage
+          try {
+            await AsyncStorage.setItem("device_id", deviceId);
+            console.log("Device ID stored in AsyncStorage.");
+          } catch (error) {
+            console.error("Error storing device ID:", error);
+          }
+        } else {
+          setSelectedDeviceId(null);
+          setDevice(null);
+          console.warn("No devices found.");
+        }
+      },
+      (error) => {
+        console.error("Error fetching devices:", error);
+        setError("Failed to load device data: " + error.message);
+      }
+    );
+
+    unsubscribeRef.current.devices = unsubscribe;
+    return unsubscribe;
   }, []);
 
   // Fetch alerts
   const fetchAlerts = useCallback(() => {
+    if (!db) {
+      setError("Firestore db not initialized.");
+      return () => {};
+    }
     try {
       const now = new Date();
       const startTime = new Date();
-      startTime.setUTCHours(startTime.getUTCHours() - 24); // Last 24 hours in UTC
+      startTime.setUTCHours(startTime.getUTCHours() - 24);
 
       console.log("Current time (UTC):", now.toISOString());
       console.log("Start time (UTC):", startTime.toISOString());
@@ -1160,25 +1079,22 @@ const DashboardPage = () => {
         limit(5)
       );
 
-      return onSnapshot(
+      const unsubscribe = onSnapshot(
         alertsQuery,
         (querySnapshot) => {
           console.log("Snapshot received:", querySnapshot.docs.length);
           const alertsList = querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            const occurAt =
-              data.occur_at instanceof Timestamp
-                ? data.occur_at.toDate()
-                : convertFirestoreTimestamp(data.occur_at);
-
+            const occurAt = data.occur_at;
+            console.log(`Alert ${doc.id} occur_at (raw):`, occurAt);
+            const convertedOccurAt = convertFirestoreTimestamp(occurAt);
             console.log(
-              `Alert ${doc.id} occur_at (UTC):`,
-              occurAt.toISOString()
+              `Alert ${doc.id} occur_at (converted):`,
+              convertedOccurAt
             );
-
             return {
               id: doc.id,
-              occur_at: occurAt,
+              occur_at: convertedOccurAt,
               status: data.status || "pending",
               detections: data.detections || {},
             };
@@ -1247,9 +1163,12 @@ const DashboardPage = () => {
           }
         }
       );
+      unsubscribeRef.current.alerts = unsubscribe;
+      return unsubscribe;
     } catch (error) {
       console.error("Error in fetchAlerts:", error);
       setError("Failed to fetch alerts: " + error.message);
+      return () => {};
     }
   }, []);
 
@@ -1265,9 +1184,9 @@ const DashboardPage = () => {
     setLoading(false);
 
     return () => {
-      unsubscribeAuth?.();
-      unsubscribeDevices?.();
-      unsubscribeAlerts?.();
+      unsubscribeRef.current.auth?.();
+      unsubscribeRef.current.devices?.();
+      unsubscribeRef.current.alerts?.();
     };
   }, [fetchCurrentUser, fetchDeviceId, fetchAlerts]);
 
@@ -1463,6 +1382,11 @@ const DashboardPage = () => {
                       soundConfidence * 100
                     ).toFixed(0)}%`
                   );
+                  if (alert.detections.sound.soundUrl?.length) {
+                    alert.detections.sound.soundUrl.forEach((url, index) => {
+                      detectionDetails.push(`Audio ${index + 1}: ${url}`);
+                    });
+                  }
                 }
                 if (alert.detections?.image?.detected) {
                   detectionDetails.push(
@@ -1470,6 +1394,11 @@ const DashboardPage = () => {
                       alert.detections.image.confidence * 100
                     ).toFixed(0)}%`
                   );
+                  if (alert.detections.image.imageUrl?.length) {
+                    alert.detections.image.imageUrl.forEach((url, index) => {
+                      detectionDetails.push(`Image ${index + 1}: ${url}`);
+                    });
+                  }
                 }
                 if (alert.detections?.smoke?.detected) {
                   detectionDetails.push(
@@ -1513,11 +1442,6 @@ const DashboardPage = () => {
                       {detectionText ? (
                         <Text style={styles.alertDetails}>{detectionText}</Text>
                       ) : null}
-                      {alert.detections?.image?.imageUrl && (
-                        <Text style={styles.alertDetails}>
-                          Image: {alert.detections.image.imageUrl}
-                        </Text>
-                      )}
                     </Animated.View>
                   </TouchableOpacity>
                 );

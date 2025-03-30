@@ -10,7 +10,6 @@ import {
   StatusBar,
 } from "react-native";
 import { Link } from "expo-router";
-import { DarkTheme } from "@react-navigation/native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -29,7 +28,7 @@ const Index = () => {
           />
         </View>
         <Text style={styles.appName}>Wildlife Prevention System</Text>
-        <Link href="/auth/SignUp" asChild>
+        <Link href="/(auth)/SignUp" asChild>
           <TouchableOpacity style={styles.button}>
             <Text style={styles.buttonText}>Welcome to Our App</Text>
           </TouchableOpacity>
@@ -94,25 +93,15 @@ const styles = StyleSheet.create({
 
 export default Index;
 
-// app/index.js
-
+// // index.jsx
 // import React from "react";
-// import { SafeAreaView, StyleSheet } from "react-native";
-// import BirdAnimation from "../components/BirdAnimation"; // Ensure the correct path
+// import { View } from "react-native";
+// import BirdAnimation from "../components/BirdAnimation"; // Adjust path
 
-// const Index = () => {
+// export default function Index() {
 //   return (
-//     <SafeAreaView style={styles.container}>
-//       <BirdAnimation />
-//     </SafeAreaView>
+//     <View style={{ flex: 1 }}>
+//       <BirdAnimation /> {/* Line 103 or similar */}
+//     </View>
 //   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: "#fff",
-//   },
-// });
-
-// export default Index;
+// }
