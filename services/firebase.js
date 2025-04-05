@@ -44,6 +44,50 @@
 
 // // Export auth and db
 // export { auth, db };
+//!Updated One
+// import { initializeApp } from "firebase/app";
+// import {
+//   getAuth,
+//   initializeAuth,
+//   getReactNativePersistence,
+// } from "firebase/auth";
+// import { getFirestore, collection } from "firebase/firestore";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// // ✅ Firebase configuration
+// const firebaseConfig = {
+//   apiKey: "AIzaSyD91v_zER4R_O3l4d20gCCIfC-0GjiVv1E",
+//   authDomain: "wildlife-c6d3e.firebaseapp.com",
+//   projectId: "wildlife-c6d3e",
+//   storageBucket: "wildlife-c6d3e.appspot.com", // 🔥 Fixed incorrect storage URL
+//   messagingSenderId: "719831533079",
+//   appId: "1:719831533079:web:d376af5067b4d45d8d7e52",
+// };
+
+// // ✅ Initialize Firebase
+// const app = initializeApp(firebaseConfig);
+
+// // ✅ Enable Auth Persistence in Expo (AsyncStorage)
+// const auth = initializeAuth(app, {
+//   persistence: getReactNativePersistence(AsyncStorage),
+// });
+
+// // ✅ Initialize Firestore
+// const db = getFirestore(app);
+
+// // ✅ Collection Reference
+// export const userCollection = collection(db, "users");
+
+// // ✅ Export Firebase services
+// export { app, auth, db };
+
+// onAuthStateChanged → listens for authentication state changes.
+// doc → references a document in Firestore.
+// getDoc → retrieves user data from Firestore.
+// setDoc → saves user data in Firestore.
+
+//! Correted one
+// services/firebase.js
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -53,34 +97,50 @@ import {
 import { getFirestore, collection } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// ✅ Firebase configuration
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD91v_zER4R_O3l4d20gCCIfC-0GjiVv1E",
   authDomain: "wildlife-c6d3e.firebaseapp.com",
   projectId: "wildlife-c6d3e",
-  storageBucket: "wildlife-c6d3e.appspot.com", // 🔥 Fixed incorrect storage URL
+  storageBucket: "wildlife-c6d3e.appspot.com",
   messagingSenderId: "719831533079",
-  appId: "1:719831533079:web:d376af5067b4d45d8d7e52",
+  appId: "1:719831533079:web:d376af5067b4d45d8d7e52", // Web appId; consider adding Android appId if available
 };
 
-// ✅ Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  console.error("Firebase initialization failed:", error.message);
+  throw error;
+}
 
-// ✅ Enable Auth Persistence in Expo (AsyncStorage)
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// Initialize Auth with AsyncStorage persistence
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+  console.log("Firebase Auth initialized with AsyncStorage persistence");
+} catch (error) {
+  console.error("Firebase Auth initialization failed:", error.message);
+  throw error;
+}
 
-// ✅ Initialize Firestore
-const db = getFirestore(app);
+// Initialize Firestore
+let db;
+try {
+  db = getFirestore(app);
+  console.log("Firestore initialized successfully");
+} catch (error) {
+  console.error("Firestore initialization failed:", error.message);
+  throw error;
+}
 
-// ✅ Collection Reference
+// Collection Reference
 export const userCollection = collection(db, "users");
 
-// ✅ Export Firebase services
+// Export Firebase services
 export { app, auth, db };
-
-// onAuthStateChanged → listens for authentication state changes.
-// doc → references a document in Firestore.
-// getDoc → retrieves user data from Firestore.
-// setDoc → saves user data in Firestore.

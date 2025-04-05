@@ -19,11 +19,16 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#000000"
+        }
+      ]
     ],
-    "assetBundlePatterns": [
-      "assets/**/*"
-    ],
+    "assetBundlePatterns": ["assets/**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -32,7 +37,13 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.WildlifeApp"
+      "googleServicesFile": "./google-services.json",
+      "package": "com.anonymous.WildlifeApp",
+      "compileSdkVersion": 34,
+      "notification": {
+        "icon": "./assets/images/notification-icon.png",
+        "color": "#000000"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -41,6 +52,15 @@
     },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e78d6629-faa0-45d1-97f8-b11432f5fb67"
+      }
+    },
+    "owner": "abdurrehman011"
   }
 }

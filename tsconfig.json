@@ -18,6 +18,6 @@
     "app/_layout.tsx",
     "app/(tabs)/_layout.jsx",
     "components/BirdAnimation.js",
-    "app/index.jsx"
+    "app/index.tsx"
   ]
 }

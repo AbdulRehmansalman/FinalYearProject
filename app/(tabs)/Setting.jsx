@@ -1,1145 +1,3 @@
-// import React, { useState, useEffect, useCallback } from "react";
-// import {
-//   SafeAreaView,
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   FlatList,
-//   ActivityIndicator,
-//   Modal,
-//   StyleSheet,
-//   Dimensions,
-//   Switch,
-// } from "react-native";
-// import { useRouter } from "expo-router";
-// import Animated, {
-//   FadeIn,
-//   useSharedValue,
-//   useAnimatedStyle,
-//   withSpring,
-// } from "react-native-reanimated";
-// import Icon from "react-native-vector-icons/Ionicons";
-// import { LinearGradient } from "expo-linear-gradient";
-
-// const { width } = Dimensions.get("window");
-
-// const Settings = () => {
-//   const [userData, setUserData] = useState({
-//     phone: "+1234567890",
-//     email: "admin@wildlife.com",
-//   });
-//   const [deviceData, setDeviceData] = useState({
-//     location: { latitude: 40.7128, longitude: -74.006 },
-//   });
-//   const [securityMembers, setSecurityMembers] = useState([
-//     { id: "sec1", phoneNumber: "+1987654321", email: "security1@wildlife.com" },
-//     { id: "sec2", phoneNumber: "+1123456789", email: "security2@wildlife.com" },
-//   ]);
-//   const [receiveAlerts, setReceiveAlerts] = useState(false);
-//   const [newSecurityPhone, setNewSecurityPhone] = useState("");
-//   const [loading, setLoading] = useState(true);
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const [modalMessage, setModalMessage] = useState("");
-//   const role = "admin"; // Hardcoded role for frontend demo
-//   const router = useRouter();
-
-//   const scale = useSharedValue(0);
-//   const animatedModalStyles = useAnimatedStyle(() => ({
-//     transform: [{ scale: scale.value }],
-//   }));
-
-//   useEffect(() => {
-//     // Simulate loading with mock data
-//     setTimeout(() => setLoading(false), 1000);
-//   }, []);
-
-//   const showModal = (message) => {
-//     setModalMessage(message);
-//     setModalVisible(true);
-//     scale.value = withSpring(1);
-//     setTimeout(() => {
-//       scale.value = withSpring(0);
-//       setModalVisible(false);
-//     }, 2000);
-//   };
-
-//   const handleSaveUser = () => {
-//     setLoading(true);
-//     setTimeout(() => {
-//       showModal("User settings saved successfully!");
-//       setLoading(false);
-//     }, 1000);
-//   };
-
-//   const handleToggleAlerts = (value) => {
-//     setReceiveAlerts(value);
-//     setTimeout(
-//       () => showModal(`SMS Alerts ${value ? "Enabled" : "Disabled"}!`),
-//       500
-//     );
-//   };
-
-//   const handleAddSecurityPhone = () => {
-//     if (!newSecurityPhone || !/^\+?\d{10,15}$/.test(newSecurityPhone)) {
-//       Alert.alert(
-//         "Invalid Phone",
-//         "Please enter a valid phone number (e.g., +1234567890)."
-//       );
-//       return;
-//     }
-//     setLoading(true);
-//     setTimeout(() => {
-//       setSecurityMembers([
-//         ...securityMembers,
-//         {
-//           id: `sec${securityMembers.length + 3}`,
-//           phoneNumber: newSecurityPhone,
-//           email: `security${securityMembers.length + 3}@wildlife.com`,
-//         },
-//       ]);
-//       setNewSecurityPhone("");
-//       showModal("Security member added successfully!");
-//       setLoading(false);
-//     }, 1000);
-//   };
-
-//   const handleRemoveSecurityMember = (memberId) => {
-//     setLoading(true);
-//     setTimeout(() => {
-//       setSecurityMembers(
-//         securityMembers.filter((member) => member.id !== memberId)
-//       );
-//       showModal("Security member removed successfully!");
-//       setLoading(false);
-//     }, 1000);
-//   };
-
-//   const handleLogout = () => {
-//     setTimeout(() => router.replace("/(auth)/login"), 500);
-//   };
-
-//   if (loading) {
-//     return (
-//       <SafeAreaView style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#4CAF50" />
-//       </SafeAreaView>
-//     );
-//   }
-
-//   // Combine all content into FlatList to avoid nesting issues
-//   const pageData = [
-//     { type: "header", id: "header" },
-//     { type: "userProfile", id: "userProfile" },
-//     { type: "notifications", id: "notifications" },
-//     { type: "securityMembers", id: "securityMembers" },
-//     { type: "deviceInfo", id: "deviceInfo" },
-//     { type: "logout", id: "logout" },
-//   ];
-
-//   const renderItem = ({ item }) => {
-//     switch (item.type) {
-//       case "header":
-//         return (
-//           <LinearGradient colors={["#4CAF50", "#388E3C"]} style={styles.header}>
-//             <Text style={styles.headerText}>Settings</Text>
-//             <TouchableOpacity
-//               onPress={() => router.replace("/(tabs)/dashboard")}
-//             >
-//               <Icon name="arrow-back" size={24} color="#fff" />
-//             </TouchableOpacity>
-//           </LinearGradient>
-//         );
-//       case "userProfile":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>User Profile</Text>
-//             <Text style={styles.label}>Role: {role}</Text>
-//             <Text style={styles.label}>Email: {userData.email}</Text>
-//             <TextInput
-//               style={styles.input}
-//               value={userData.phone}
-//               onChangeText={(text) => setUserData({ ...userData, phone: text })}
-//               placeholder="Phone Number (e.g., +1234567890)"
-//               placeholderTextColor="#999"
-//               keyboardType="phone-pad"
-//             />
-//             <TouchableOpacity
-//               style={styles.saveButton}
-//               onPress={handleSaveUser}
-//             >
-//               <Icon name="save-outline" size={20} color="#fff" />
-//               <Text style={styles.buttonText}>Save Changes</Text>
-//             </TouchableOpacity>
-//           </Animated.View>
-//         );
-//       case "notifications":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Notification Settings</Text>
-//             <View style={styles.switchRow}>
-//               <Text style={styles.label}>Receive SMS Alerts</Text>
-//               <Switch
-//                 value={receiveAlerts}
-//                 onValueChange={handleToggleAlerts}
-//                 trackColor={{ false: "#767577", true: "#4CAF50" }}
-//                 thumbColor={receiveAlerts ? "#fff" : "#f4f3f4"}
-//               />
-//             </View>
-//           </Animated.View>
-//         );
-//       case "securityMembers":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Manage Security Team</Text>
-//             {securityMembers.length > 0 ? (
-//               securityMembers.map((member) => (
-//                 <View key={member.id} style={styles.memberItem}>
-//                   <View>
-//                     <Text style={styles.label}>
-//                       Phone: {member.phoneNumber}
-//                     </Text>
-//                     <Text style={styles.subLabel}>Email: {member.email}</Text>
-//                   </View>
-//                   <TouchableOpacity
-//                     style={styles.removeButton}
-//                     onPress={() => handleRemoveSecurityMember(member.id)}
-//                   >
-//                     <Icon name="trash-outline" size={20} color="#fff" />
-//                   </TouchableOpacity>
-//                 </View>
-//               ))
-//             ) : (
-//               <Text style={styles.emptyText}>
-//                 No security team members found
-//               </Text>
-//             )}
-//             <View style={styles.addMemberContainer}>
-//               <TextInput
-//                 style={[styles.input, styles.addInput]}
-//                 value={newSecurityPhone}
-//                 onChangeText={setNewSecurityPhone}
-//                 placeholder="Add Security Phone (e.g., +1234567890)"
-//                 placeholderTextColor="#999"
-//                 keyboardType="phone-pad"
-//               />
-//               <TouchableOpacity
-//                 style={styles.addButton}
-//                 onPress={handleAddSecurityPhone}
-//               >
-//                 <Icon name="add-outline" size={20} color="#fff" />
-//                 <Text style={styles.buttonText}>Add</Text>
-//               </TouchableOpacity>
-//             </View>
-//           </Animated.View>
-//         );
-//       case "deviceInfo":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Device Information</Text>
-//             <Text style={styles.label}>
-//               Device: Pi Unit 001 | Location: Lat{" "}
-//               {deviceData.location.latitude.toFixed(2)}, Lon{" "}
-//               {deviceData.location.longitude.toFixed(2)}
-//             </Text>
-//             <TouchableOpacity
-//               style={styles.editButton}
-//               onPress={() => router.push("/(tabs)/settings/device-location")}
-//             >
-//               <Icon name="location-outline" size={20} color="#fff" />
-//               <Text style={styles.buttonText}>Edit Location</Text>
-//             </TouchableOpacity>
-//           </Animated.View>
-//         );
-//       case "logout":
-//         return (
-//           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-//             <Icon name="log-out-outline" size={20} color="#fff" />
-//             <Text style={styles.buttonText}>Logout</Text>
-//           </TouchableOpacity>
-//         );
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <FlatList
-//         data={pageData}
-//         renderItem={renderItem}
-//         keyExtractor={(item) => item.id}
-//         showsVerticalScrollIndicator={false}
-//         contentContainerStyle={{ paddingBottom: 20 }}
-//       />
-//       <Modal
-//         transparent={true}
-//         visible={modalVisible}
-//         onRequestClose={() => setModalVisible(false)}
-//       >
-//         <View style={styles.modalOverlay}>
-//           <Animated.View style={[styles.modalContent, animatedModalStyles]}>
-//             <Text style={styles.modalText}>{modalMessage}</Text>
-//           </Animated.View>
-//         </View>
-//       </Modal>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: "#121212" },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: "center",
-//     backgroundColor: "#121212",
-//   },
-//   header: {
-//     padding: 20,
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     borderBottomWidth: 1,
-//     borderBottomColor: "#2d2d2d",
-//   },
-//   headerText: { color: "#fff", fontSize: 28, fontWeight: "700" },
-//   card: {
-//     backgroundColor: "#1e1e1e",
-//     borderRadius: 20,
-//     padding: 20,
-//     marginVertical: 10,
-//     marginHorizontal: 10,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 5 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 10,
-//     elevation: 8,
-//   },
-//   sectionTitle: {
-//     color: "#4CAF50",
-//     fontSize: 20,
-//     fontWeight: "700",
-//     marginBottom: 15,
-//   },
-//   label: { color: "#fff", fontSize: 16, marginBottom: 10 },
-//   subLabel: { color: "#bbb", fontSize: 14, marginBottom: 10 },
-//   input: {
-//     borderColor: "#4CAF50",
-//     borderWidth: 1,
-//     borderRadius: 12,
-//     color: "#fff",
-//     padding: 12,
-//     marginBottom: 15,
-//     backgroundColor: "#2d2d2d",
-//     fontSize: 16,
-//   },
-//   saveButton: {
-//     backgroundColor: "#4CAF50",
-//     borderRadius: 12,
-//     padding: 12,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     elevation: 5,
-//   },
-//   switchRow: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginBottom: 15,
-//   },
-//   memberItem: {
-//     backgroundColor: "#2d2d2d",
-//     borderRadius: 12,
-//     padding: 15,
-//     marginBottom: 10,
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//   },
-//   addMemberContainer: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     marginTop: 15,
-//   },
-//   addInput: { flex: 1, marginRight: 10 },
-//   addButton: {
-//     backgroundColor: "#388E3C",
-//     borderRadius: 12,
-//     padding: 12,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     elevation: 5,
-//   },
-//   removeButton: {
-//     backgroundColor: "#D32F2F",
-//     borderRadius: 10,
-//     padding: 8,
-//     alignItems: "center",
-//   },
-//   editButton: {
-//     backgroundColor: "#4CAF50",
-//     borderRadius: 12,
-//     padding: 12,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     marginTop: 15,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     elevation: 5,
-//   },
-//   logoutButton: {
-//     backgroundColor: "#D32F2F",
-//     borderRadius: 12,
-//     padding: 12,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     marginVertical: 20,
-//     marginHorizontal: 10,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 5,
-//     elevation: 5,
-//   },
-//   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 8 },
-//   emptyText: {
-//     color: "#bbb",
-//     fontSize: 16,
-//     textAlign: "center",
-//     marginVertical: 10,
-//   },
-//   modalOverlay: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "rgba(0, 0, 0, 0.6)",
-//   },
-//   modalContent: {
-//     backgroundColor: "#4CAF50",
-//     borderRadius: 20,
-//     padding: 20,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 5 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 10,
-//     elevation: 8,
-//   },
-//   modalText: {
-//     color: "#fff",
-//     fontSize: 18,
-//     fontWeight: "600",
-//     textAlign: "center",
-//   },
-// });
-
-// export default Settings;
-// !working
-// import React, { useState, useEffect, useCallback } from "react";
-// import {
-//   SafeAreaView,
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   FlatList,
-//   ActivityIndicator,
-//   Modal,
-//   StyleSheet,
-//   Dimensions,
-//   Switch,
-//   Alert,
-// } from "react-native";
-// import { useRouter } from "expo-router";
-// import Animated, {
-//   FadeIn,
-//   useSharedValue,
-//   useAnimatedStyle,
-//   withSpring,
-// } from "react-native-reanimated";
-// import Icon from "react-native-vector-icons/Ionicons";
-// import { LinearGradient } from "expo-linear-gradient";
-// import { auth, db } from "../../services/firebase";
-// import {
-//   doc,
-//   getDoc,
-//   updateDoc,
-//   collection,
-//   query,
-//   where,
-//   onSnapshot,
-//   setDoc,
-//   deleteDoc,
-// } from "firebase/firestore";
-// import { signOut } from "firebase/auth";
-// import { GeoPoint } from "firebase/firestore";
-
-// const { width } = Dimensions.get("window");
-
-// const Settings = () => {
-//   const [userData, setUserData] = useState({
-//     name: "",
-//     email: "",
-//     phone: "",
-//     role: "",
-//     receiveAlerts: false,
-//   });
-//   const [deviceData, setDeviceData] = useState({
-//     deviceId: "",
-//     location: { latitude: 0, longitude: 0 },
-//   });
-//   const [securityMembers, setSecurityMembers] = useState([]);
-//   const [newMember, setNewMember] = useState({
-//     email: "",
-//     password: "",
-//     phoneNumber: "",
-//     role: "security",
-//   });
-//   const [loading, setLoading] = useState(true);
-//   const [modalVisible, setModalVisible] = useState(false);
-//   const [modalMessage, setModalMessage] = useState("");
-//   const [currentUserId, setCurrentUserId] = useState(null);
-//   const router = useRouter();
-
-//   const scale = useSharedValue(0);
-//   const animatedModalStyles = useAnimatedStyle(() => ({
-//     transform: [{ scale: scale.value }],
-//   }));
-
-//   // Show modal with a message
-//   const showModal = (message) => {
-//     setModalMessage(message);
-//     setModalVisible(true);
-//     scale.value = withSpring(1);
-//     setTimeout(() => {
-//       scale.value = withSpring(0);
-//       setModalVisible(false);
-//     }, 2000);
-//   };
-
-//   // Fetch current user and their data
-//   useEffect(() => {
-//     const unsubscribe = auth.onAuthStateChanged((user) => {
-//       if (user) {
-//         setCurrentUserId(user.uid);
-//         fetchUserData(user.uid);
-//       } else {
-//         setCurrentUserId(null);
-//         router.replace("/(auth)/login");
-//       }
-//     });
-
-//     return () => unsubscribe();
-//   }, [router]);
-
-//   // Fetch user data from Firestore
-//   const fetchUserData = async (uid) => {
-//     try {
-//       const userRef = doc(db, "users", uid);
-//       const userSnap = await getDoc(userRef);
-//       if (userSnap.exists()) {
-//         const data = userSnap.data();
-//         setUserData({
-//           name: data.name || "",
-//           email: data.email || "",
-//           phone: data.phone || "",
-//           role: data.role || "",
-//           receiveAlerts: data.receiveAlerts || false,
-//         });
-//       } else {
-//         showModal("User data not found.");
-//       }
-//     } catch (error) {
-//       console.error("Error fetching user data:", error);
-//       showModal("Failed to load user data: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Fetch the first device
-//   useEffect(() => {
-//     const devicesQuery = query(collection(db, "devices"));
-//     const unsubscribe = onSnapshot(
-//       devicesQuery,
-//       (querySnapshot) => {
-//         if (!querySnapshot.empty) {
-//           const deviceDoc = querySnapshot.docs[0];
-//           const deviceData = deviceDoc.data();
-//           setDeviceData({
-//             deviceId: deviceDoc.id,
-//             location: deviceData.location
-//               ? {
-//                   latitude: deviceData.location.latitude,
-//                   longitude: deviceData.location.longitude,
-//                 }
-//               : { latitude: 0, longitude: 0 },
-//           });
-//         } else {
-//           showModal("No devices found.");
-//         }
-//       },
-//       (error) => {
-//         console.error("Error fetching devices:", error);
-//         showModal("Failed to load devices: " + error.message);
-//       }
-//     );
-
-//     return () => unsubscribe();
-//   }, []);
-
-//   // Fetch security members (users with role "security")
-//   useEffect(() => {
-//     const securityQuery = query(
-//       collection(db, "users"),
-//       where("role", "==", "security")
-//     );
-//     const unsubscribe = onSnapshot(
-//       securityQuery,
-//       (querySnapshot) => {
-//         const members = querySnapshot.docs.map((doc) => ({
-//           id: doc.id,
-//           ...doc.data(),
-//         }));
-//         setSecurityMembers(members);
-//       },
-//       (error) => {
-//         console.error("Error fetching security members:", error);
-//         showModal("Failed to load security members: " + error.message);
-//       }
-//     );
-
-//     return () => unsubscribe();
-//   }, []);
-
-//   // Update user profile
-//   const handleSaveUser = async () => {
-//     if (!currentUserId) {
-//       showModal("User not authenticated.");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const userRef = doc(db, "users", currentUserId);
-//       await updateDoc(userRef, {
-//         name: userData.name,
-//         email: userData.email,
-//         phone: userData.phone,
-//         receiveAlerts: userData.receiveAlerts,
-//       });
-//       showModal("Profile updated successfully!");
-//     } catch (error) {
-//       console.error("Error updating user profile:", error);
-//       showModal("Failed to update profile: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Toggle SMS alerts
-//   const toggleAlerts = async (value) => {
-//     setUserData((prev) => ({ ...prev, receiveAlerts: value }));
-//     if (!currentUserId) {
-//       showModal("User not authenticated.");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const userRef = doc(db, "users", currentUserId);
-//       await updateDoc(userRef, { receiveAlerts: value });
-//       showModal(`SMS Alerts ${value ? "Enabled" : "Disabled"}!`);
-//     } catch (error) {
-//       console.error("Error toggling alerts:", error);
-//       showModal("Failed to toggle alerts: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Add a new security member
-//   const handleAddSecurityMember = async () => {
-//     if (
-//       !newMember.name ||
-//       !newMember.email ||
-//       !newMember.password ||
-//       !newMember.phoneNumber
-//     ) {
-//       Alert.alert(
-//         "Invalid Input",
-//         "Please fill in all fields for the new security member."
-//       );
-//       return;
-//     }
-//     if (!/^\+?\d{10,15}$/.test(newMember.phoneNumber)) {
-//       Alert.alert(
-//         "Invalid Phone",
-//         "Please enter a valid phone number (e.g., +1234567890)."
-//       );
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const newMemberId = `sec${Date.now()}`; // Temporary ID for demo
-//       const memberRef = doc(db, "users", newMemberId);
-//       await setDoc(memberRef, {
-//         name: newMember.name,
-//         email: newMember.email,
-//         password: newMember.password, // In a real app, hash this password
-//         phone: newMember.phoneNumber,
-//         role: "security",
-//         receiveAlerts: false,
-//       });
-//       setNewMember({
-//         name: "",
-//         email: "",
-//         password: "",
-//         phoneNumber: "",
-//         role: "security",
-//       });
-//       showModal("Security member added successfully!");
-//     } catch (error) {
-//       console.error("Error adding security member:", error);
-//       showModal("Failed to add security member: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Remove a security member
-//   const handleRemoveSecurityMember = async (memberId) => {
-//     setLoading(true);
-//     try {
-//       const memberRef = doc(db, "users", memberId);
-//       await deleteDoc(memberRef);
-//       showModal("Security member removed successfully!");
-//     } catch (error) {
-//       console.error("Error removing security member:", error);
-//       showModal("Failed to remove security member: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Update device location
-//   const handleUpdateDeviceLocation = async () => {
-//     if (!deviceData.deviceId) {
-//       showModal("No device selected.");
-//       return;
-//     }
-//     setLoading(true);
-//     try {
-//       const deviceRef = doc(db, "devices", deviceData.deviceId);
-//       const newLocation = new GeoPoint(
-//         deviceData.location.latitude + 0.01,
-//         deviceData.location.longitude + 0.01
-//       );
-//       await updateDoc(deviceRef, { location: newLocation });
-//       setDeviceData((prev) => ({
-//         ...prev,
-//         location: {
-//           latitude: prev.location.latitude + 0.01,
-//           longitude: prev.location.longitude + 0.01,
-//         },
-//       }));
-//       showModal("Device location updated successfully!");
-//     } catch (error) {
-//       console.error("Error updating device location:", error);
-//       showModal("Failed to update device location: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Logout
-//   const handleLogout = async () => {
-//     setLoading(true);
-//     try {
-//       await signOut(auth);
-//       router.replace("/(auth)/login");
-//     } catch (error) {
-//       console.error("Error logging out:", error);
-//       showModal("Failed to log out: " + error.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <SafeAreaView style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#4CAF50" />
-//         <Text style={styles.loadingText}>Loading...</Text>
-//       </SafeAreaView>
-//     );
-//   }
-
-//   const pageData = [
-//     { type: "header", id: "header" },
-//     { type: "userProfile", id: "userProfile" },
-//     { type: "notifications", id: "notifications" },
-//     { type: "securityMembers", id: "securityMembers" },
-//     { type: "deviceInfo", id: "deviceInfo" },
-//     { type: "logout", id: "logout" },
-//   ];
-
-//   const renderItem = ({ item }) => {
-//     switch (item.type) {
-//       case "header":
-//         return (
-//           <LinearGradient colors={["#4CAF50", "#2E7D32"]} style={styles.header}>
-//             <Text style={styles.headerText}>Settings Dashboard</Text>
-//             <TouchableOpacity
-//               onPress={() => router.replace("/(tabs)/dashboard")}
-//             >
-//               <Icon name="arrow-back" size={28} color="#fff" />
-//             </TouchableOpacity>
-//           </LinearGradient>
-//         );
-//       case "userProfile":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Your Profile</Text>
-//             <TextInput
-//               style={styles.input}
-//               value={userData.name}
-//               onChangeText={(text) => setUserData({ ...userData, name: text })}
-//               placeholder="Name"
-//               placeholderTextColor="#999"
-//               autoCapitalize="words"
-//             />
-//             <TextInput
-//               style={styles.input}
-//               value={userData.email}
-//               onChangeText={(text) => setUserData({ ...userData, email: text })}
-//               placeholder="Email"
-//               placeholderTextColor="#999"
-//               keyboardType="email-address"
-//               autoCapitalize="none"
-//             />
-//             <TextInput
-//               style={styles.input}
-//               value={userData.phone}
-//               onChangeText={(text) => setUserData({ ...userData, phone: text })}
-//               placeholder="Phone Number (e.g., +1234567890)"
-//               placeholderTextColor="#999"
-//               keyboardType="phone-pad"
-//             />
-//             <TouchableOpacity
-//               style={styles.actionButton}
-//               onPress={handleSaveUser}
-//               disabled={loading}
-//             >
-//               <LinearGradient
-//                 colors={["#4CAF50", "#388E3C"]}
-//                 style={styles.buttonGradient}
-//               >
-//                 <Icon name="save-outline" size={20} color="#fff" />
-//                 <Text style={styles.buttonText}>Update Profile</Text>
-//               </LinearGradient>
-//             </TouchableOpacity>
-//           </Animated.View>
-//         );
-//       case "notifications":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Notifications</Text>
-//             <View style={styles.switchRow}>
-//               <Text style={styles.label}>Receive SMS Alerts</Text>
-//               <Switch
-//                 value={userData.receiveAlerts}
-//                 onValueChange={toggleAlerts}
-//                 trackColor={{ false: "#767577", true: "#4CAF50" }}
-//                 thumbColor={userData.receiveAlerts ? "#fff" : "#f4f3f4"}
-//                 disabled={loading}
-//               />
-//             </View>
-//           </Animated.View>
-//         );
-//       case "securityMembers":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Security Team Management</Text>
-//             {securityMembers.length > 0 ? (
-//               securityMembers.map((member) => (
-//                 <View key={member.id} style={styles.memberItem}>
-//                   <View>
-//                     <Text style={styles.label}>{member.name}</Text>
-//                     <Text style={styles.subLabel}>Email: {member.email}</Text>
-//                     <Text style={styles.subLabel}>Phone: {member.phone}</Text>
-//                     <Text style={styles.subLabel}>Role: {member.role}</Text>
-//                   </View>
-//                   <TouchableOpacity
-//                     style={styles.removeButton}
-//                     onPress={() => handleRemoveSecurityMember(member.id)}
-//                     disabled={loading}
-//                   >
-//                     <Icon name="trash-outline" size={20} color="#fff" />
-//                   </TouchableOpacity>
-//                 </View>
-//               ))
-//             ) : (
-//               <Text style={styles.emptyText}>No security team members</Text>
-//             )}
-//             <Text style={styles.subSectionTitle}>Add New Member</Text>
-
-//             <TextInput
-//               style={styles.input}
-//               value={newMember.email}
-//               onChangeText={(text) =>
-//                 setNewMember({ ...newMember, email: text })
-//               }
-//               placeholder="Email"
-//               placeholderTextColor="#999"
-//               keyboardType="email-address"
-//               autoCapitalize="none"
-//             />
-//             <TextInput
-//               style={styles.input}
-//               value={newMember.password}
-//               onChangeText={(text) =>
-//                 setNewMember({ ...newMember, password: text })
-//               }
-//               placeholder="Password"
-//               placeholderTextColor="#999"
-//               secureTextEntry
-//               autoCapitalize="none"
-//             />
-//             <TextInput
-//               style={styles.input}
-//               value={newMember.phoneNumber}
-//               onChangeText={(text) =>
-//                 setNewMember({ ...newMember, phoneNumber: text })
-//               }
-//               placeholder="Phone (e.g., +1234567890)"
-//               placeholderTextColor="#999"
-//               keyboardType="phone-pad"
-//             />
-//             <TouchableOpacity
-//               style={styles.actionButton}
-//               onPress={handleAddSecurityMember}
-//               disabled={loading}
-//             >
-//               <LinearGradient
-//                 colors={["#388E3C", "#2E7D32"]}
-//                 style={styles.buttonGradient}
-//               >
-//                 <Icon name="person-add-outline" size={20} color="#fff" />
-//                 <Text style={styles.buttonText}>Add Member</Text>
-//               </LinearGradient>
-//             </TouchableOpacity>
-//           </Animated.View>
-//         );
-//       case "deviceInfo":
-//         return (
-//           <Animated.View entering={FadeIn} style={styles.card}>
-//             <Text style={styles.sectionTitle}>Device Settings</Text>
-//             <Text style={styles.label}>
-//               {deviceData.deviceId || "No Device"} | Lat:{" "}
-//               {deviceData.location.latitude.toFixed(2)}, Lon:{" "}
-//               {deviceData.location.longitude.toFixed(2)}
-//             </Text>
-//             <TouchableOpacity
-//               style={styles.actionButton}
-//               onPress={handleUpdateDeviceLocation}
-//               disabled={loading || !deviceData.deviceId}
-//             >
-//               <LinearGradient
-//                 colors={["#4CAF50", "#388E3C"]}
-//                 style={styles.buttonGradient}
-//               >
-//                 <Icon name="location-outline" size={20} color="#fff" />
-//                 <Text style={styles.buttonText}>Update Location</Text>
-//               </LinearGradient>
-//             </TouchableOpacity>
-//           </Animated.View>
-//         );
-//       case "logout":
-//         return (
-//           <TouchableOpacity
-//             style={styles.logoutButton}
-//             onPress={handleLogout}
-//             disabled={loading}
-//           >
-//             <LinearGradient
-//               colors={["#D32F2F", "#B71C1C"]}
-//               style={styles.buttonGradient}
-//             >
-//               <Icon name="log-out-outline" size={20} color="#fff" />
-//               <Text style={styles.buttonText}>Logout</Text>
-//             </LinearGradient>
-//           </TouchableOpacity>
-//         );
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <FlatList
-//         data={pageData}
-//         renderItem={renderItem}
-//         keyExtractor={(item) => item.id}
-//         showsVerticalScrollIndicator={false}
-//         contentContainerStyle={{ paddingBottom: 30 }}
-//       />
-//       <Modal
-//         transparent={true}
-//         visible={modalVisible}
-//         onRequestClose={() => setModalVisible(false)}
-//         animationType="none"
-//       >
-//         <View style={styles.modalOverlay}>
-//           <Animated.View style={[styles.modalContent, animatedModalStyles]}>
-//             <Text style={styles.modalText}>{modalMessage}</Text>
-//           </Animated.View>
-//         </View>
-//       </Modal>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, backgroundColor: "#121212" },
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "#121212",
-//   },
-//   loadingText: {
-//     color: "#fff",
-//     fontSize: 16,
-//     marginTop: 10,
-//   },
-//   header: {
-//     padding: 20,
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     borderBottomWidth: 1,
-//     borderBottomColor: "#2d2d2d",
-//   },
-//   headerText: { color: "#fff", fontSize: 28, fontWeight: "700" },
-//   card: {
-//     backgroundColor: "#1e1e1e",
-//     borderRadius: 20,
-//     padding: 20,
-//     marginVertical: 10,
-//     marginHorizontal: 15,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 5 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 10,
-//     elevation: 8,
-//   },
-//   sectionTitle: {
-//     color: "#4CAF50",
-//     fontSize: 22,
-//     fontWeight: "700",
-//     marginBottom: 15,
-//   },
-//   subSectionTitle: {
-//     color: "#fff",
-//     fontSize: 18,
-//     fontWeight: "600",
-//     marginTop: 15,
-//     marginBottom: 10,
-//   },
-//   label: { color: "#fff", fontSize: 16, marginBottom: 10 },
-//   subLabel: { color: "#bbb", fontSize: 14, marginBottom: 5 },
-//   input: {
-//     borderColor: "#4CAF50",
-//     borderWidth: 1,
-//     borderRadius: 12,
-//     color: "#fff",
-//     padding: 12,
-//     marginBottom: 15,
-//     backgroundColor: "#2d2d2d",
-//     fontSize: 16,
-//   },
-//   actionButton: {
-//     borderRadius: 12,
-//     overflow: "hidden",
-//   },
-//   buttonGradient: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     padding: 12,
-//   },
-//   switchRow: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginBottom: 15,
-//   },
-//   memberItem: {
-//     backgroundColor: "#2d2d2d",
-//     borderRadius: 12,
-//     padding: 15,
-//     marginBottom: 10,
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//   },
-//   removeButton: {
-//     backgroundColor: "#D32F2F",
-//     borderRadius: 10,
-//     padding: 8,
-//   },
-//   logoutButton: {
-//     borderRadius: 12,
-//     marginVertical: 20,
-//     marginHorizontal: 15,
-//     overflow: "hidden",
-//   },
-//   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 8 },
-//   emptyText: {
-//     color: "#bbb",
-//     fontSize: 16,
-//     textAlign: "center",
-//     marginVertical: 10,
-//   },
-//   modalOverlay: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     backgroundColor: "rgba(0, 0, 0, 0.7)",
-//   },
-//   modalContent: {
-//     backgroundColor: "#4CAF50",
-//     borderRadius: 20,
-//     padding: 25,
-//     shadowColor: "#000",
-//     shadowOffset: { width: 0, height: 5 },
-//     shadowOpacity: 0.3,
-//     shadowRadius: 10,
-//     elevation: 8,
-//   },
-//   modalText: {
-//     color: "#fff",
-//     fontSize: 18,
-//     fontWeight: "600",
-//     textAlign: "center",
-//   },
-// });
-
-// export default Settings;
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   SafeAreaView,
@@ -1148,12 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
-  Modal,
   StyleSheet,
   Dimensions,
   Switch,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, {
@@ -1161,6 +18,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
+  Easing,
+  runOnJS, // Import runOnJS
 } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -1181,7 +41,44 @@ import {
 import { signOut } from "firebase/auth";
 import { GeoPoint } from "firebase/firestore";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+const SkeletonLoader = ({ width, height, style }) => {
+  const shimmer = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(255, 255, 255, ${0.1 + shimmer.value * 0.1})`,
+  }));
+
+  useEffect(() => {
+    shimmer.value = withTiming(1, {
+      duration: 1000,
+      easing: Easing.inOut(Easing.ease),
+    });
+    const interval = setInterval(() => {
+      shimmer.value = withTiming(shimmer.value === 1 ? 0 : 1, {
+        duration: 1000,
+        easing: Easing.inOut(Easing.ease),
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [shimmer]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor: "#2d2d2d",
+          borderRadius: 8,
+        },
+        animatedStyle,
+        style,
+      ]}
+    />
+  );
+};
 
 const Settings = () => {
   const [userData, setUserData] = useState({
@@ -1204,26 +101,51 @@ const Settings = () => {
     active: true,
     password: "",
   });
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
+  const [updateLocationVisible, setUpdateLocationVisible] = useState(false);
+  const [newLatitude, setNewLatitude] = useState("");
+  const [newLongitude, setNewLongitude] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
   const router = useRouter();
 
-  const scale = useSharedValue(0);
-  const animatedModalStyles = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  const headerScale = useSharedValue(1);
+  const backButtonScale = useSharedValue(1);
+  const updateLocationScale = useSharedValue(0);
+
+  const animatedHeaderStyles = useAnimatedStyle(() => ({
+    transform: [{ scale: headerScale.value }],
   }));
 
-  // Show modal with a message
+  const animatedBackButtonStyles = useAnimatedStyle(() => ({
+    transform: [{ scale: backButtonScale.value }],
+  }));
+
+  const animatedUpdateLocationStyles = useAnimatedStyle(() => ({
+    transform: [{ scale: updateLocationScale.value }],
+  }));
+
+  // Show message using Alert
   const showModal = (message) => {
-    setModalMessage(message);
-    setModalVisible(true);
-    scale.value = withSpring(1);
+    r;
+    Alert.alert("Message", message, [{ text: "OK" }]);
+  };
+
+  // Show update location prompt
+  const showUpdateLocationPrompt = () => {
+    setNewLatitude(deviceData.location.latitude.toString());
+    setNewLongitude(deviceData.location.longitude.toString());
+    setUpdateLocationVisible(true);
+    updateLocationScale.value = withSpring(1);
+  };
+
+  // Hide update location prompt
+  const hideUpdateLocationPrompt = () => {
+    updateLocationScale.value = withSpring(0);
     setTimeout(() => {
-      scale.value = withSpring(0);
-      setModalVisible(false);
-    }, 2000);
+      setUpdateLocationVisible(false);
+    }, 300);
   };
 
   // Fetch current user and their data
@@ -1321,7 +243,7 @@ const Settings = () => {
 
   // Finish loading after initial data fetch
   useEffect(() => {
-    setTimeout(() => setLoading(false), 1000);
+    setTimeout(() => setLoading(false), 2000);
   }, []);
 
   // Update user profile
@@ -1369,16 +291,19 @@ const Settings = () => {
   };
 
   // Check if email already exists in Firestore
-  const checkEmailExists = async (email) => {
+  const checkEmailExists = async (email, excludeMemberId = null) => {
     const usersQuery = query(
       collection(db, "users"),
       where("email", "==", email)
     );
     const querySnapshot = await getDocs(usersQuery);
+    if (excludeMemberId) {
+      return querySnapshot.docs.some((doc) => doc.id !== excludeMemberId);
+    }
     return !querySnapshot.empty;
   };
 
-  // Add a new security member directly in Firestore
+  // Add a new security member
   const handleAddSecurityMember = async () => {
     if (
       !newMember.username ||
@@ -1409,7 +334,6 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      // Check if the email already exists in Firestore
       const emailExists = await checkEmailExists(newMember.email);
       if (emailExists) {
         showModal(
@@ -1418,10 +342,7 @@ const Settings = () => {
         return;
       }
 
-      // Generate a unique ID for the new member
-      const newMemberId = `sec${Date.now()}`; // Temporary ID for demo
-
-      // Store user metadata in Firestore (excluding password for security)
+      const newMemberId = `sec${Date.now()}`;
       const memberRef = doc(db, "users", newMemberId);
       await setDoc(memberRef, {
         username: newMember.username,
@@ -1431,17 +352,7 @@ const Settings = () => {
         active: newMember.active,
       });
 
-      // Reset the form
-      setNewMember({
-        username: "",
-        email: "",
-        phoneNumber: "",
-        role: "security",
-        active: true,
-        password: "",
-      });
-
-      // Display success message with the password (for demo purposes)
+      resetForm();
       showModal(
         `Security member added successfully! Password: ${newMember.password}`
       );
@@ -1453,12 +364,92 @@ const Settings = () => {
     }
   };
 
+  // Update an existing security member
+  const handleUpdateSecurityMember = async () => {
+    if (!newMember.username || !newMember.email || !newMember.phoneNumber) {
+      Alert.alert(
+        "Invalid Input",
+        "Please fill in all fields for the security member."
+      );
+      return;
+    }
+    if (!/^\+?\d{10,15}$/.test(newMember.phoneNumber)) {
+      Alert.alert(
+        "Invalid Phone",
+        "Please enter a valid phone number (e.g., +1234567890)."
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const emailExists = await checkEmailExists(
+        newMember.email,
+        selectedMemberId
+      );
+      if (emailExists) {
+        showModal(
+          "This email is already in use by another user. Please use a different email."
+        );
+        return;
+      }
+
+      const memberRef = doc(db, "users", selectedMemberId);
+      await updateDoc(memberRef, {
+        username: newMember.username,
+        email: newMember.email,
+        phoneNumber: newMember.phoneNumber,
+        role: newMember.role,
+        active: newMember.active,
+      });
+
+      resetForm();
+      showModal("Security member updated successfully!");
+    } catch (error) {
+      console.error("Error updating security member:", error);
+      showModal("Failed to update security member: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset the form after adding/updating
+  const resetForm = () => {
+    setNewMember({
+      username: "",
+      email: "",
+      phoneNumber: "",
+      role: "security",
+      active: true,
+      password: "",
+    });
+    setSelectedMemberId(null);
+    setIsEditing(false);
+  };
+
+  // Populate form with selected member's data for editing
+  const handleEditSecurityMember = (member) => {
+    setNewMember({
+      username: member.username,
+      email: member.email,
+      phoneNumber: member.phoneNumber,
+      role: member.role,
+      active: member.active,
+      password: "",
+    });
+    setSelectedMemberId(member.id);
+    setIsEditing(true);
+  };
+
   // Remove a security member
   const handleRemoveSecurityMember = async (memberId) => {
     setLoading(true);
     try {
       const memberRef = doc(db, "users", memberId);
       await deleteDoc(memberRef);
+      if (selectedMemberId === memberId) {
+        resetForm();
+      }
       showModal("Security member removed successfully!");
     } catch (error) {
       console.error("Error removing security member:", error);
@@ -1520,22 +511,41 @@ const Settings = () => {
       showModal("No device selected.");
       return;
     }
+
+    const latitude = parseFloat(newLatitude);
+    const longitude = parseFloat(newLongitude);
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      showModal("Please enter valid latitude and longitude values.");
+      return;
+    }
+
+    if (
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      showModal(
+        "Latitude must be between -90 and 90, and longitude must be between -180 and 180."
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const deviceRef = doc(db, "devices", deviceData.deviceId);
-      const newLocation = new GeoPoint(
-        deviceData.location.latitude + 0.01,
-        deviceData.location.longitude + 0.01
-      );
+      const newLocation = new GeoPoint(latitude, longitude);
       await updateDoc(deviceRef, { location: newLocation });
       setDeviceData((prev) => ({
         ...prev,
         location: {
-          latitude: prev.location.latitude + 0.01,
-          longitude: prev.location.longitude + 0.01,
+          latitude,
+          longitude,
         },
       }));
       showModal("Device location updated successfully!");
+      hideUpdateLocationPrompt();
     } catch (error) {
       console.error("Error updating device location:", error);
       showModal("Failed to update device location: " + error.message);
@@ -1544,28 +554,32 @@ const Settings = () => {
     }
   };
 
-  // Logout
+  // Handle logout with confirmation
   const handleLogout = async () => {
-    setLoading(true);
-    try {
-      await signOut(auth);
-      router.replace("/(auth)/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-      showModal("Failed to log out: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+    Alert.alert("Confirm Logout", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Yes",
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await signOut(auth);
+            router.replace("/(auth)/login");
+          } catch (error) {
+            console.error("Error logging out:", error);
+            showModal("Failed to log out: " + error.message);
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
+  // Handle back button press without confirmation
+  const handleBackPress = () => {
+    router.push("/(tabs)/DashboardPage");
+  };
 
   const pageData = [
     { type: "header", id: "header" },
@@ -1579,17 +593,65 @@ const Settings = () => {
     switch (item.type) {
       case "header":
         return (
-          <LinearGradient colors={["#4CAF50", "#2E7D32"]} style={styles.header}>
-            <Text style={styles.headerText}>Settings Dashboard</Text>
-            <TouchableOpacity
-              onPress={() => router.replace("/(tabs)/dashboard")}
-            >
-              <Icon name="arrow-back" size={28} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
+          <TouchableOpacity
+            activeOpacity={0.95}
+            onPress={() => {
+              headerScale.value = withSpring(0.98, {}, () => {
+                headerScale.value = withSpring(1);
+              });
+            }}
+          >
+            <Animated.View style={[styles.header, animatedHeaderStyles]}>
+              <LinearGradient
+                colors={["#4CAF50", "#2E7D32"]}
+                style={styles.headerGradient}
+              >
+                <TouchableOpacity
+                  onPress={handleBackPress}
+                  style={styles.backButton}
+                >
+                  <Animated.View style={animatedBackButtonStyles}>
+                    <Icon name="arrow-back" size={28} color="#fff" />
+                  </Animated.View>
+                </TouchableOpacity>
+                <View style={styles.headerContent}>
+                  <Text style={styles.headerText}>Settings </Text>
+                </View>
+              </LinearGradient>
+            </Animated.View>
+          </TouchableOpacity>
         );
       case "userProfile":
-        return (
+        return loading ? (
+          <View style={styles.card}>
+            <SkeletonLoader
+              width={width - 60}
+              height={30}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={100}
+              height={20}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader width={150} height={40} />
+          </View>
+        ) : (
           <Animated.View entering={FadeIn} style={styles.card}>
             <Text style={styles.sectionTitle}>Your Profile</Text>
             <TextInput
@@ -1650,13 +712,47 @@ const Settings = () => {
           </Animated.View>
         );
       case "securityMembers":
-        return (
+        return loading ? (
+          <View style={styles.card}>
+            <SkeletonLoader
+              width={width - 60}
+              height={30}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={100}
+              style={{ marginBottom: 10 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={100}
+              style={{ marginBottom: 10 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={50}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader width={150} height={40} />
+          </View>
+        ) : (
           <Animated.View entering={FadeIn} style={styles.card}>
             <Text style={styles.sectionTitle}>Security Team Management</Text>
             {securityMembers.length > 0 ? (
               securityMembers.map((member) => (
                 <View key={member.id} style={styles.memberItem}>
-                  <View>
+                  <View style={styles.memberDetails}>
                     <Text style={styles.label}>{member.username}</Text>
                     <Text style={styles.subLabel}>Email: {member.email}</Text>
                     <Text style={styles.subLabel}>
@@ -1689,19 +785,30 @@ const Settings = () => {
                       />
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveSecurityMember(member.id)}
-                    disabled={loading}
-                  >
-                    <Icon name="trash-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
+                  <View style={styles.memberActions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => handleEditSecurityMember(member)}
+                      disabled={loading}
+                    >
+                      <Icon name="pencil-outline" size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => handleRemoveSecurityMember(member.id)}
+                      disabled={loading}
+                    >
+                      <Icon name="trash-outline" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             ) : (
               <Text style={styles.emptyText}>No security team members</Text>
             )}
-            <Text style={styles.subSectionTitle}>Add New Member</Text>
+            <Text style={styles.subSectionTitle}>
+              {isEditing ? "Update Member" : "Add New Member"}
+            </Text>
             <TextInput
               style={styles.input}
               value={newMember.username}
@@ -1729,21 +836,23 @@ const Settings = () => {
               onChangeText={(text) =>
                 setNewMember({ ...newMember, phoneNumber: text })
               }
-              placeholder="Phone (e.g., +1234567890)"
+              placeholder="Phone (e.g, +1234567890)"
               placeholderTextColor="#999"
               keyboardType="phone-pad"
             />
-            <TextInput
-              style={styles.input}
-              value={newMember.password}
-              onChangeText={(text) =>
-                setNewMember({ ...newMember, password: text })
-              }
-              placeholder="Password"
-              placeholderTextColor="#999"
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            {!isEditing && (
+              <TextInput
+                style={styles.input}
+                value={newMember.password}
+                onChangeText={(text) =>
+                  setNewMember({ ...newMember, password: text })
+                }
+                placeholder="Password"
+                placeholderTextColor="#999"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            )}
             <View style={styles.pickerRow}>
               <Text style={styles.label}>Role:</Text>
               <Picker
@@ -1772,21 +881,52 @@ const Settings = () => {
             </View>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={handleAddSecurityMember}
+              onPress={
+                isEditing ? handleUpdateSecurityMember : handleAddSecurityMember
+              }
               disabled={loading}
             >
               <LinearGradient
                 colors={["#388E3C", "#2E7D32"]}
                 style={styles.buttonGradient}
               >
-                <Icon name="person-add-outline" size={20} color="#fff" />
-                <Text style={styles.buttonText}>Add Member</Text>
+                <Icon
+                  name={isEditing ? "save-outline" : "person-add-outline"}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.buttonText}>
+                  {isEditing ? "Update Member" : "Add Member"}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
+            {isEditing && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={resetForm}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel Update</Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         );
       case "deviceInfo":
-        return (
+        return loading ? (
+          <View style={styles.card}>
+            <SkeletonLoader
+              width={width - 60}
+              height={30}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader
+              width={width - 60}
+              height={20}
+              style={{ marginBottom: 15 }}
+            />
+            <SkeletonLoader width={150} height={40} />
+          </View>
+        ) : (
           <Animated.View entering={FadeIn} style={styles.card}>
             <Text style={styles.sectionTitle}>Device Settings</Text>
             <Text style={styles.label}>
@@ -1796,7 +936,7 @@ const Settings = () => {
             </Text>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={handleUpdateDeviceLocation}
+              onPress={showUpdateLocationPrompt}
               disabled={loading || !deviceData.deviceId}
             >
               <LinearGradient
@@ -1807,10 +947,69 @@ const Settings = () => {
                 <Text style={styles.buttonText}>Update Location</Text>
               </LinearGradient>
             </TouchableOpacity>
+            {updateLocationVisible && (
+              <Animated.View
+                style={[
+                  styles.updateLocationPrompt,
+                  animatedUpdateLocationStyles,
+                ]}
+              >
+                <Text style={styles.modalTitle}>Update Device Location</Text>
+                <Text style={styles.modalLabel}>Latitude:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={newLatitude}
+                  onChangeText={setNewLatitude}
+                  placeholder="Enter latitude"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.modalLabel}>Longitude:</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={newLongitude}
+                  onChangeText={setNewLongitude}
+                  placeholder="Enter longitude"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+                <View style={styles.modalButtonRow}>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={hideUpdateLocationPrompt}
+                  >
+                    <LinearGradient
+                      colors={["#D32F2F", "#B71C1C"]}
+                      style={styles.buttonGradient}
+                    >
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={handleUpdateDeviceLocation}
+                    disabled={loading}
+                  >
+                    <LinearGradient
+                      colors={["#4CAF50", "#388E3C"]}
+                      style={styles.buttonGradient}
+                    >
+                      <Text style={styles.buttonText}>Update</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            )}
           </Animated.View>
         );
       case "logout":
-        return (
+        return loading ? (
+          <SkeletonLoader
+            width={width - 30}
+            height={50}
+            style={styles.logoutButton}
+          />
+        ) : (
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
@@ -1839,18 +1038,6 @@ const Settings = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 30 }}
       />
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-        animationType="none"
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View style={[styles.modalContent, animatedModalStyles]}>
-            <Text style={styles.modalText}>{modalMessage}</Text>
-          </Animated.View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -1870,13 +1057,38 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#2d2d2d",
+    paddingTop: Platform.OS === "ios" ? 40 : 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  headerText: { color: "#fff", fontSize: 28, fontWeight: "700" },
+  headerGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    borderRadius: 20,
+  },
+  backButton: {
+    marginRight: 10,
+    padding: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 40,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
   card: {
     backgroundColor: "#1e1e1e",
     borderRadius: 20,
@@ -1920,6 +1132,7 @@ const styles = StyleSheet.create({
   actionButton: {
     borderRadius: 12,
     overflow: "hidden",
+    marginTop: 10,
   },
   buttonGradient: {
     flexDirection: "row",
@@ -1953,10 +1166,32 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  memberDetails: {
+    flex: 1,
+  },
+  memberActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 10,
+    padding: 8,
+    marginRight: 10,
+  },
   removeButton: {
     backgroundColor: "#D32F2F",
     borderRadius: 10,
     padding: 8,
+  },
+  cancelButton: {
+    marginTop: 10,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#D32F2F",
+    fontSize: 16,
+    fontWeight: "600",
   },
   logoutButton: {
     borderRadius: 12,
@@ -1971,27 +1206,49 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 10,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-  },
-  modalContent: {
-    backgroundColor: "#4CAF50",
+  updateLocationPrompt: {
+    backgroundColor: "#1e1e1e",
     borderRadius: 20,
-    padding: 25,
+    padding: 20,
+    marginTop: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
   },
-  modalText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
+  modalTitle: {
+    color: "#4CAF50",
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 15,
     textAlign: "center",
+  },
+  modalLabel: {
+    color: "#fff",
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  modalInput: {
+    borderColor: "#4CAF50",
+    borderWidth: 1,
+    borderRadius: 12,
+    color: "#fff",
+    padding: 12,
+    marginBottom: 15,
+    backgroundColor: "#2d2d2d",
+    fontSize: 16,
+  },
+  modalButtonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  modalButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 });
 

@@ -259,7 +259,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../context/authContext";
 
 const SignIn = () => {
-  const { login } = useAuth(); // ✅ Remove 'user' from here
+  const { login } = useAuth();
   const router = useRouter();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
