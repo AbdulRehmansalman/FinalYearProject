@@ -10,17 +10,106 @@ import {
   FlatList,
   TouchableOpacity,
   Platform,
+  TextInput,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { db } from "../../services/firebase";
-import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  Timestamp,
+  collection,
+  addDoc,
+} from "firebase/firestore";
 import Icon from "react-native-vector-icons/Ionicons";
 import { Audio } from "expo-av";
 import Slider from "@react-native-community/slider";
 import { StatusBar } from "expo-status-bar";
-import { useAuth } from "../../context/authContext";
+import { useAuth, role } from "../../context/authContext";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import {
+  sendPushNotification,
+  getSecurityPushTokens,
+} from "../../services/notificationService";
+
+// Debounce hook to delay state updates
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+console.log("rerender", role);
+
+// Separate NotesSection component to isolate notes functionality
+const NotesSection = ({
+  role,
+  notes,
+  notesInput,
+  setNotesInput,
+  handleUpdateNotes,
+}) => {
+  // Debounce the notesInput to prevent frequent rerenders
+  const debouncedNotesInput = useDebounce(notesInput, 300);
+
+  // Log for debugging
+  useEffect(() => {
+    console.log(
+      "NotesSection rerendered with notesInput:",
+      debouncedNotesInput
+    );
+  }, [debouncedNotesInput]);
+
+  return (
+    <>
+      <View style={styles.detailRow}>
+        <Icon
+          name="document-text-outline"
+          size={20}
+          color="#4CAF50"
+          style={styles.detailIcon}
+        />
+        <Text style={styles.detailText}>
+          <Text style={styles.label}>Notes:</Text> {notes || "N/A"}
+        </Text>
+      </View>
+      {role === "admin" && (
+        <View style={styles.notesUpdateContainer}>
+          <TextInput
+            style={styles.notesInput}
+            value={notesInput}
+            onChangeText={setNotesInput}
+            placeholder="Update notes..."
+            placeholderTextColor="#999"
+            multiline
+          />
+          <TouchableOpacity
+            onPress={handleUpdateNotes}
+            style={styles.updateNotesButton}
+          >
+            <LinearGradient
+              colors={["#4CAF50", "#388E3C"]}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.buttonText}>Update Notes</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
+  );
+};
 
 const AlertDetailPage = () => {
   const { alertId } = useLocalSearchParams();
@@ -35,7 +124,21 @@ const AlertDetailPage = () => {
   const [soundDuration, setSoundDuration] = useState(0);
   const [imageError, setImageError] = useState({});
   const [soundError, setSoundError] = useState({});
+  const [notesInput, setNotesInput] = useState("");
 
+  // Debug logs for role and conditions
+  console.log("Current user role:", role);
+  useEffect(() => {
+    if (alertDetails) {
+      console.log("Alert status:", alertDetails.status);
+      console.log(
+        "Should show buttons:",
+        role === "admin" && alertDetails.status === "pending"
+      );
+    }
+  }, [alertDetails, role]);
+
+  // Convert Firestore timestamp to readable date string
   const convertTimestampToDateString = useCallback((timestamp) => {
     if (!timestamp) return "Unknown";
     try {
@@ -47,6 +150,7 @@ const AlertDetailPage = () => {
     }
   }, []);
 
+  // Resolve Firestore references (e.g., deviceId, resolvedBy,)
   const resolveReference = useCallback(async (ref) => {
     if (!ref) return "Unknown";
     try {
@@ -66,6 +170,7 @@ const AlertDetailPage = () => {
     }
   }, []);
 
+  // Parse location array into latitude and longitude
   const parseLocation = useCallback((locationArray) => {
     if (!Array.isArray(locationArray) || locationArray.length !== 2) {
       return { latitude: "N/A", longitude: "N/A" };
@@ -77,6 +182,7 @@ const AlertDetailPage = () => {
     return { latitude, longitude };
   }, []);
 
+  // Initialize audio settings and clean up sound on unmount
   useEffect(() => {
     const initializeAudio = async () => {
       try {
@@ -101,6 +207,7 @@ const AlertDetailPage = () => {
     };
   }, [sound]);
 
+  // Fetch alert details from Firestore
   const fetchAlertDetails = useCallback(async () => {
     if (!alertId) {
       setError("No alert ID provided.");
@@ -122,15 +229,17 @@ const AlertDetailPage = () => {
       const formattedData = {
         ...data,
         deviceId,
-        deviceRef: data.deviceId, // Store the device reference
+        deviceRef: data.deviceId,
         occur_at: convertTimestampToDateString(data.occur_at),
         resolvedAt: data.resolvedAt
           ? convertTimestampToDateString(data.resolvedAt)
           : "N/A",
-        securityNotified: data.securityNotified || "N/A", // Include securityNotified
+        securityNotified: data.securityNotified || "N/A",
         detections: data.detections || {},
         location: parseLocation(data.location),
       };
+
+      console.log("Fetched alert status:", formattedData.status);
 
       if (formattedData.detections) {
         if (formattedData.detections.image?.timestamp) {
@@ -164,6 +273,7 @@ const AlertDetailPage = () => {
       }
 
       setAlertDetails(formattedData);
+      setNotesInput(data.notes || "");
     } catch (error) {
       console.error("Error fetching alert details:", error);
       setError("Failed to load alert details: " + error.message);
@@ -176,6 +286,7 @@ const AlertDetailPage = () => {
     fetchAlertDetails();
   }, [fetchAlertDetails]);
 
+  // Play sound from URL
   const playSound = useCallback(
     async (url, index) => {
       try {
@@ -214,6 +325,7 @@ const AlertDetailPage = () => {
     [sound]
   );
 
+  // Pause sound playback
   const pauseSound = useCallback(async () => {
     try {
       if (sound) {
@@ -226,6 +338,7 @@ const AlertDetailPage = () => {
     }
   }, [sound]);
 
+  // Handle sound slider value change
   const handleSliderValueChange = useCallback(
     async (value) => {
       if (sound && soundDuration > 0) {
@@ -241,32 +354,75 @@ const AlertDetailPage = () => {
     [sound, soundDuration]
   );
 
+  // Handle image loading errors
   const handleImageError = useCallback((index) => {
     setImageError((prev) => ({ ...prev, [index]: true }));
   }, []);
 
+  // Handle admin approving the alert
   const handleApprove = useCallback(async () => {
     try {
       const alertRef = doc(db, "alerts", alertId);
       const userRef = user?.uid ? doc(db, "users", user.uid) : null;
       const now = Timestamp.now();
 
+      // Fetch security user push tokens
+      const securityTokens = await getSecurityPushTokens();
+      if (securityTokens.length === 0) {
+        console.log("No security members found to notify.");
+      }
+
       await updateDoc(alertRef, {
         status: "approved",
         resolvedAt: now,
         resolvedBy: userRef,
         securityNotified: "notified",
+        notification: securityTokens,
       });
 
-      // Refresh the alert details to reflect the updated status
+      // Log the notification in the notifications collection (without body)
+      if (securityTokens.length > 0) {
+        await addDoc(collection(db, "notifications"), {
+          alertId: alertId,
+          recipients: securityTokens,
+          title: "Alert Approved",
+          sentAt: now,
+          type: "push",
+        });
+        console.log(
+          "Notification logged in Firestore notifications collection"
+        );
+      }
+
+      // Send push notifications to security members with a categoryIdentifier for actions
+      if (securityTokens.length > 0) {
+        const notificationPromises = securityTokens.map((token) =>
+          sendPushNotification(
+            token,
+            "Alert Approved",
+            `An alert from device ${alertDetails.deviceId} at ${alertDetails.occur_at} has been approved.`,
+            {
+              alertId,
+              categoryIdentifier: "SECURITY_RESPONSE",
+            }
+          )
+        );
+        await Promise.all(notificationPromises);
+        console.log(
+          "Push notifications sent to security members:",
+          securityTokens
+        );
+      }
+
       await fetchAlertDetails();
       router.back();
     } catch (error) {
       console.error("Error approving alert:", error);
       setError("Failed to approve alert: " + error.message);
     }
-  }, [alertId, user?.uid, router, fetchAlertDetails]);
+  }, [alertId, user?.uid, router, fetchAlertDetails, alertDetails]);
 
+  // Handle admin rejecting the alert
   const handleReject = useCallback(async () => {
     try {
       const alertRef = doc(db, "alerts", alertId);
@@ -280,7 +436,6 @@ const AlertDetailPage = () => {
         securityNotified: "not notified",
       });
 
-      // Refresh the alert details to reflect the updated status
       await fetchAlertDetails();
       router.back();
     } catch (error) {
@@ -289,11 +444,27 @@ const AlertDetailPage = () => {
     }
   }, [alertId, user?.uid, router, fetchAlertDetails]);
 
+  // Handle updating notes
+  const handleUpdateNotes = useCallback(async () => {
+    try {
+      const alertRef = doc(db, "alerts", alertId);
+      await updateDoc(alertRef, {
+        notes: notesInput,
+      });
+      await fetchAlertDetails();
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      setError("Failed to update notes: " + error.message);
+    }
+  }, [alertId, notesInput, fetchAlertDetails]);
+
+  // Memoize status color based on alert status
   const statusColor = useMemo(
     () => getStatusColor(alertDetails?.status),
     [alertDetails?.status]
   );
 
+  // Render loading state
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -306,6 +477,7 @@ const AlertDetailPage = () => {
     );
   }
 
+  // Render error state
   if (error || !alertDetails) {
     return (
       <SafeAreaView style={styles.container}>
@@ -445,17 +617,14 @@ const AlertDetailPage = () => {
               </View>
             </>
           )}
-          <View style={styles.detailRow}>
-            <Icon
-              name="document-text-outline"
-              size={20}
-              color="#4CAF50"
-              style={styles.detailIcon}
-            />
-            <Text style={styles.detailText}>
-              <Text style={styles.label}>Notes:</Text> {notes || "N/A"}
-            </Text>
-          </View>
+          {/* Notes Display and Update */}
+          <NotesSection
+            role={role}
+            notes={notes}
+            notesInput={notesInput}
+            setNotesInput={setNotesInput}
+            handleUpdateNotes={handleUpdateNotes}
+          />
         </Animated.View>
 
         {/* Location Information */}
@@ -824,6 +993,7 @@ const AlertDetailPage = () => {
   );
 };
 
+// Function to determine status color
 const getStatusColor = (status) => {
   switch (status) {
     case "pending":
@@ -836,6 +1006,8 @@ const getStatusColor = (status) => {
       return "#FFFFFF";
   }
 };
+
+export default AlertDetailPage;
 
 const styles = StyleSheet.create({
   container: {
@@ -850,6 +1022,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 20,
+    paddingTop: Platform.OS === "ios" ? 40 : 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     shadowColor: "#000",
@@ -870,82 +1043,69 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
     backgroundColor: "#1e1e1e",
-    borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#4CAF50",
-    marginBottom: 15,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  detailIcon: {
-    marginRight: 10,
-  },
-  detailText: {
-    color: "#fff",
-    fontSize: 16,
-    flex: 1,
-  },
-  label: {
-    fontWeight: "600",
-    color: "#bbb",
-  },
-  imageList: {
-    paddingVertical: 10,
-  },
-  imageWrapper: {
-    width: 220,
-    height: 220,
-    marginRight: 15,
-    borderRadius: 10,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 10,
-  },
-  imagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 10,
-    backgroundColor: "#2d2d2d",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  imageErrorText: {
-    color: "#D32F2F",
-    fontSize: 14,
-    marginTop: 5,
-    textAlign: "center",
-  },
-  soundContainer: {
-    backgroundColor: "#2d2d2d",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 3,
+  },
+  sectionTitle: {
+    color: "#4CAF50",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 15,
+    textTransform: "uppercase",
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  detailIcon: {
+    marginRight: 10,
+  },
+  detailText: {
+    color: "#bbb",
+    fontSize: 16,
+    flex: 1,
+    flexWrap: "wrap",
+  },
+  label: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  imageWrapper: {
+    marginRight: 10,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+  },
+  imagePlaceholder: {
+    width: 200,
+    height: 200,
+    backgroundColor: "#2a2a2a",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  imageErrorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginTop: 5,
+  },
+  imageList: {
+    paddingVertical: 10,
+  },
+  soundContainer: {
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 8,
   },
   soundHeader: {
     flexDirection: "row",
@@ -953,12 +1113,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   playButton: {
-    borderRadius: 25,
-    overflow: "hidden",
+    marginRight: 10,
   },
   playButtonGradient: {
     padding: 10,
-    borderRadius: 25,
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -966,17 +1125,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    flex: 1,
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-  },
-  timeText: {
-    color: "#bbb",
-    fontSize: 12,
-    textAlign: "right",
-    marginTop: 5,
   },
   soundPlaceholder: {
     flexDirection: "row",
@@ -987,6 +1135,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 5,
   },
+  slider: {
+    width: "100%",
+    height: 40,
+  },
+  timeText: {
+    color: "#999",
+    fontSize: 12,
+    textAlign: "right",
+    marginTop: 5,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  approveButton: {
+    flex: 1,
+    marginRight: 10,
+  },
+  rejectButton: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  buttonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -995,67 +1182,49 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 12,
+    fontSize: 16,
+    marginTop: 10,
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#121212",
+    padding: 20,
   },
   errorText: {
-    color: "#F44336",
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 15,
+    color: "#D32F2F",
+    fontSize: 18,
     textAlign: "center",
+    marginBottom: 20,
   },
   retryButton: {
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  buttonGradient: {
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 10,
+    borderRadius: 8,
   },
   retryText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
   },
-  actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    marginBottom: 20,
+  notesUpdateContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 8,
   },
-  approveButton: {
-    borderRadius: 10,
-    overflow: "hidden",
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  rejectButton: {
-    borderRadius: 10,
-    overflow: "hidden",
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  buttonText: {
+  notesInput: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
+    backgroundColor: "#333",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    minHeight: 80,
+    textAlignVertical: "top",
   },
-  buttonIcon: {
-    marginRight: 5,
+  updateNotesButton: {
+    alignSelf: "flex-end",
   },
 });
-
-export default AlertDetailPage;
