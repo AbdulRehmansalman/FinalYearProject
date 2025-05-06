@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontFamily: "Poppins-Bold", // Bold for title
     color: "white",
     marginBottom: 20,
     textAlign: "center",
@@ -303,13 +303,14 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontFamily: "Poppins-Bold", // Bold for app name
     color: "#4CAF50",
     textAlign: "center",
     marginBottom: 10,
   },
   description: {
     fontSize: 16,
+    fontFamily: "Poppins-Regular", // Regular for description
     color: "#CCCCCC",
     textAlign: "center",
     marginBottom: 20,
@@ -336,18 +337,10 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
   },
-  secondaryButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
   buttonText: {
-    color: "white",
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: "Poppins-Bold",
+    color: "white",
   },
   buttonIcon: {
     marginLeft: 8,
