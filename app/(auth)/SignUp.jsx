@@ -16,7 +16,8 @@ import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Picker } from "@react-native-picker/picker";
-import { useAuth } from "../../context/authContext"; // Adjust path as needed
+import { useAuth } from "../../context/authContext";
+import Toast from "react-native-toast-message";
 
 const SignUp = () => {
   const { signup } = useAuth();
@@ -37,7 +38,7 @@ const SignUp = () => {
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on change
+    setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const validateForm = () => {
@@ -69,9 +70,14 @@ const SignUp = () => {
         formData.phoneNumber,
         formData.username
       );
-      router.push("/(auth)/SignIn"); // Redirect to SignIn on success
+      router.push("/(auth)/SignIn");
     } catch (error) {
-      setErrors({ form: error.message || "Sign up failed. Please try again." });
+      Toast.show({
+        type: "error",
+        text1: "Sign Up Failed",
+        text2: "An error occurred during sign up. Please try again.",
+        position: "top",
+      });
     } finally {
       setLoading(false);
     }
@@ -293,12 +299,12 @@ const styles = StyleSheet.create({
   headerText: {
     color: "#fff",
     fontSize: 32,
-    fontFamily: "Poppins-Bold", // Bold for header
+    fontFamily: "Poppins-Bold",
   },
   subHeaderText: {
     color: "#ddd",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for subheader
+    fontFamily: "Poppins-Regular",
     marginTop: 5,
   },
   formContainer: {
@@ -312,7 +318,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#333333", // Grey background
+    backgroundColor: "#333333",
     borderRadius: 12,
     marginBottom: 15,
     paddingHorizontal: 10,
@@ -322,7 +328,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for input text
+    fontFamily: "Poppins-Regular",
     paddingVertical: 12,
   },
   pickerContainer: {
@@ -332,15 +338,15 @@ const styles = StyleSheet.create({
   },
   picker: {
     color: "#fff",
-    backgroundColor: "#333333", // Grey background
+    backgroundColor: "#333333",
     height: 50,
-    fontFamily: "Poppins-Regular", // Regular for picker text
+    fontFamily: "Poppins-Regular",
   },
   eyeIcon: { padding: 10 },
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for error text
+    fontFamily: "Poppins-Regular",
     marginBottom: 15,
     textAlign: "center",
   },
@@ -356,17 +362,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "Poppins-Bold", // Bold for button text
+    fontFamily: "Poppins-Bold",
   },
   signInLink: {
     color: "#bbb",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for link
+    fontFamily: "Poppins-Regular",
     textAlign: "center",
   },
   signInText: {
     color: "#4CAF50",
-    fontFamily: "Poppins-Bold", // Bold for sign-in text
+    fontFamily: "Poppins-Bold",
   },
 });
 

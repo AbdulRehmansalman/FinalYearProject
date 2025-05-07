@@ -17,6 +17,7 @@ import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../context/authContext";
+import Toast from "react-native-toast-message"; // Import Toast
 
 const SignIn = () => {
   const { login } = useAuth();
@@ -49,13 +50,47 @@ const SignIn = () => {
       await login(formData.email, formData.password);
 
       // Fetch Role & Redirect After Login
-      const role = await AsyncStorage.getItem("role");
-      console.log("Logged-in Role:", role);
-      const redirectPath =
-        role === "admin" ? "/(tabs)/DashboardPage" : "/(tabs)/AlertsPage";
+      let role;
+      try {
+        role = await AsyncStorage.getItem("role");
+      } catch (storageError) {
+        // Handle AsyncStorage error gracefully
+        Toast.show({
+          type: "error",
+          text1: "Sign In Failed",
+          text2: "Unable to retrieve user role. Please try again.",
+          position: "top",
+          visibilityTime: 4000,
+        });
+        return;
+      }
+
+      // Define valid roles and fallback navigation
+      const validRoles = ["admin", "security"];
+      const redirectPath = validRoles.includes(role)
+        ? role === "admin"
+          ? "/(tabs)/DashboardPage"
+          : "/(tabs)/AlertsPage"
+        : "/(tabs)/AlertsPage"; // Fallback to AlertsPage if role is invalid
+
       router.replace(redirectPath);
     } catch (error) {
-      setErrors({ form: error.message || "Sign in failed. Please try again." });
+      // Show toast with specific messages for common Firebase errors
+      let errorMessage = "An error occurred during sign in. Please try again.";
+      if (error.code === "auth/invalid-credential") {
+        errorMessage =
+          "Invalid email or password. Please check your credentials.";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many attempts. Please try again later.";
+      }
+
+      Toast.show({
+        type: "error",
+        text1: "Sign In Failed",
+        text2: errorMessage,
+        position: "top",
+        visibilityTime: 4000,
+      });
     } finally {
       setLoading(false);
     }
@@ -134,7 +169,6 @@ const SignIn = () => {
             {errors.password && (
               <Text style={styles.errorText}>{errors.password}</Text>
             )}
-            {errors.form && <Text style={styles.errorText}>{errors.form}</Text>}
 
             <TouchableOpacity
               style={styles.signInButton}
@@ -184,12 +218,12 @@ const styles = StyleSheet.create({
   headerText: {
     color: "#fff",
     fontSize: 32,
-    fontFamily: "Poppins-Bold", // Bold for header
+    fontFamily: "Poppins-Bold",
   },
   subHeaderText: {
     color: "#ddd",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for subheader
+    fontFamily: "Poppins-Regular",
     marginTop: 5,
   },
   formContainer: {
@@ -213,14 +247,14 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for input text
+    fontFamily: "Poppins-Regular",
     paddingVertical: 12,
   },
   eyeIcon: { padding: 10 },
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for error text
+    fontFamily: "Poppins-Regular",
     marginBottom: 15,
     textAlign: "center",
   },
@@ -236,17 +270,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "Poppins-Bold", // Bold for button text
+    fontFamily: "Poppins-Bold",
   },
   signUpLink: {
     color: "#bbb",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for link
+    fontFamily: "Poppins-Regular",
     textAlign: "center",
   },
   signUpText: {
     color: "#4CAF50",
-    fontFamily: "Poppins-Bold", // Bold for signup text
+    fontFamily: "Poppins-Bold",
   },
 });
 
