@@ -102,7 +102,6 @@ const DashboardPage = () => {
 
       return null;
     } catch (error) {
-      console.error("Error converting timestamp:", error);
       return null;
     }
   };
@@ -121,7 +120,6 @@ const DashboardPage = () => {
         minute: "2-digit",
       });
     } catch (error) {
-      console.error("Error formatting date:", error);
       return "N/A";
     }
   };
@@ -154,7 +152,6 @@ const DashboardPage = () => {
         }
       },
       (error) => {
-        console.error("Auth state change error:", error);
         setError("Failed to authenticate user: " + error.message);
       }
     );
@@ -177,11 +174,9 @@ const DashboardPage = () => {
           setUser(docSnap.data());
         } else {
           setUser(null);
-          console.warn("User data not found for uid:", uid);
         }
       },
       (error) => {
-        console.error("Error fetching user data:", error);
         setError("Failed to load user data: " + error.message);
       }
     );
@@ -210,17 +205,13 @@ const DashboardPage = () => {
 
           try {
             await AsyncStorage.setItem("device_id", deviceId);
-          } catch (error) {
-            console.error("Error storing device ID:", error);
-          }
+          } catch (error) {}
         } else {
           setSelectedDeviceId(null);
           setDevice(null);
-          console.warn("No devices found.");
         }
       },
       (error) => {
-        console.error("Error fetching devices:", error);
         setError("Failed to load device data: " + error.message);
       }
     );
@@ -297,7 +288,6 @@ const DashboardPage = () => {
           setModalVisible(true);
         },
         (error) => {
-          console.error("Error fetching alerts for hour:", error);
           setModalAlerts([]);
           setModalHourLabel(hourLabel);
           setModalVisible(true);
@@ -306,7 +296,6 @@ const DashboardPage = () => {
 
       return () => unsubscribe();
     } catch (error) {
-      console.error("Error in fetchAlertsForHour:", error);
       setModalAlerts([]);
       setModalHourLabel(hourLabel);
       setModalVisible(true);
@@ -450,13 +439,10 @@ const DashboardPage = () => {
                   : [{ value: 0, label: formatTrendTime(now) }]
               );
             },
-            (error) => {
-              console.error("Error fetching 24-hour trends:", error);
-            }
+            (error) => {}
           );
         },
         (error) => {
-          console.error("Error fetching alerts:", error);
           if (
             error.code === "failed-precondition" &&
             error.message.includes("index")
@@ -473,7 +459,6 @@ const DashboardPage = () => {
       unsubscribeRef.current.alerts = unsubscribe;
       return unsubscribe;
     } catch (error) {
-      console.error("Error in fetchAlerts:", error);
       setError("Failed to fetch alerts: " + error.message);
       return () => {};
     }
@@ -1052,7 +1037,7 @@ const dashboardStyles = StyleSheet.create({
   headerTitle: {
     color: "#fff",
     fontSize: 28,
-    fontFamily: "Poppins-Bold", // Bold for header title
+    fontFamily: "Poppins-Bold",
   },
   listContent: {
     padding: 15,
@@ -1084,7 +1069,7 @@ const dashboardStyles = StyleSheet.create({
   cardTitle: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "Poppins-Bold", // Bold for card titles
+    fontFamily: "Poppins-Bold",
   },
   statusRow: {
     flexDirection: "row",
@@ -1095,7 +1080,7 @@ const dashboardStyles = StyleSheet.create({
   statusLabel: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for status label
+    fontFamily: "Poppins-Regular",
   },
   statusIndicator: {
     paddingVertical: 4,
@@ -1105,14 +1090,14 @@ const dashboardStyles = StyleSheet.create({
   statusText: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for status text
+    fontFamily: "Poppins-Regular",
     textTransform: "uppercase",
   },
   statusDetail: {
     color: "#bbb",
     fontSize: 14,
     marginTop: 4,
-    fontFamily: "Poppins-Regular", // Regular for status details
+    fontFamily: "Poppins-Regular",
   },
   chartContainer: {
     position: "relative",
@@ -1159,20 +1144,20 @@ const dashboardStyles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     marginTop: 5,
-    fontFamily: "Poppins-Regular", // Regular for chart labels
+    fontFamily: "Poppins-Regular",
   },
   barChartValue: {
     color: "#fff",
     fontSize: 12,
     marginBottom: 5,
-    fontFamily: "Poppins-Regular", // Regular for chart values
+    fontFamily: "Poppins-Regular",
   },
   chartLabel: {
     color: "#999",
     fontSize: 12,
     textAlign: "center",
     marginTop: 8,
-    fontFamily: "Poppins-Regular", // Regular for chart label
+    fontFamily: "Poppins-Regular",
   },
   statsGrid: {
     flexDirection: "row",
@@ -1203,13 +1188,13 @@ const dashboardStyles = StyleSheet.create({
   statNumber: {
     color: "#fff",
     fontSize: 24,
-    fontFamily: "Poppins-Bold", // Bold for stat numbers
+    fontFamily: "Poppins-Bold",
   },
   statLabel: {
     color: "#bbb",
     fontSize: 14,
     marginTop: 4,
-    fontFamily: "Poppins-Regular", // Regular for stat labels
+    fontFamily: "Poppins-Regular",
   },
   alertCard: {
     backgroundColor: "#2d2d2d",
@@ -1226,25 +1211,25 @@ const dashboardStyles = StyleSheet.create({
   alertTime: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for alert time
+    fontFamily: "Poppins-Regular",
   },
   alertStatus: {
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for alert status
+    fontFamily: "Poppins-Regular",
     textTransform: "capitalize",
   },
   alertDetails: {
     color: "#999",
     fontSize: 12,
     lineHeight: 18,
-    fontFamily: "Poppins-Regular", // Regular for alert details
+    fontFamily: "Poppins-Regular",
   },
   emptyText: {
     color: "#999",
     fontSize: 16,
     textAlign: "center",
     marginVertical: 20,
-    fontFamily: "Poppins-Regular", // Regular for empty text
+    fontFamily: "Poppins-Regular",
   },
   quickActions: {
     flexDirection: "row",
@@ -1273,7 +1258,7 @@ const dashboardStyles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     marginLeft: 8,
-    fontFamily: "Poppins-Bold", // Bold for quick action text
+    fontFamily: "Poppins-Bold",
   },
   modalContainer: {
     flex: 1,
@@ -1291,7 +1276,7 @@ const dashboardStyles = StyleSheet.create({
   modalTitle: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "Poppins-Bold", // Bold for modal title
+    fontFamily: "Poppins-Bold",
   },
   modalAlertList: {
     maxHeight: 400,
@@ -1305,25 +1290,25 @@ const dashboardStyles = StyleSheet.create({
   modalAlertTime: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for modal alert time
+    fontFamily: "Poppins-Regular",
   },
   modalAlertStatus: {
     color: "#bbb",
     fontSize: 12,
     marginVertical: 2,
-    fontFamily: "Poppins-Regular", // Regular for modal alert status
+    fontFamily: "Poppins-Regular",
   },
   modalAlertDetails: {
     color: "#999",
     fontSize: 12,
-    fontFamily: "Poppins-Regular", // Regular for modal alert details
+    fontFamily: "Poppins-Regular",
   },
   modalEmptyText: {
     color: "#999",
     fontSize: 16,
     textAlign: "center",
     marginVertical: 20,
-    fontFamily: "Poppins-Regular", // Regular for modal empty text
+    fontFamily: "Poppins-Regular",
   },
   modalCloseButton: {
     backgroundColor: "#4CAF50",
@@ -1335,7 +1320,7 @@ const dashboardStyles = StyleSheet.create({
   modalCloseText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Bold", // Bold for modal close text
+    fontFamily: "Poppins-Bold",
   },
 });
 

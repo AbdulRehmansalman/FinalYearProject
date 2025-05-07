@@ -65,10 +65,8 @@ const preloadImage = async (url) => {
     );
     const prefetchPromise = Image.prefetch(url);
     await Promise.race([prefetchPromise, timeoutPromise]);
-    console.log(`Preload successful for image ${url}`);
     return true;
   } catch (error) {
-    console.error(`Preload failed for image ${url}:`, error.message);
     return false;
   }
 };
@@ -86,17 +84,10 @@ const preloadSound = async (url) => {
     if (response.ok) {
       const contentType = response.headers.get("content-type");
       const isAudio = contentType && contentType.startsWith("audio/");
-      console.log(
-        `Preload ${
-          isAudio ? "successful" : "failed"
-        } for sound ${url} (Content-Type: ${contentType})`
-      );
       return isAudio;
     }
-    console.error(`Preload failed for sound ${url}: HTTP ${response.status}`);
     return false;
   } catch (error) {
-    console.error(`Preload failed for sound ${url}:`, error.message);
     return false;
   }
 };
@@ -110,13 +101,6 @@ const NotesSection = ({
   handleUpdateNotes,
 }) => {
   const debouncedNotesInput = useDebounce(notesInput, 300);
-
-  useEffect(() => {
-    console.log(
-      "NotesSection rerendered with notesInput:",
-      debouncedNotesInput
-    );
-  }, [debouncedNotesInput]);
 
   return (
     <>
@@ -167,7 +151,7 @@ const AlertDetailPage = () => {
   const [error, setError] = useState(null);
   const [imageError, setImageError] = useState({});
   const [soundError, setSoundError] = useState({});
-  const [soundRetryCount, setSoundRetryCount] = useState({});
+  const [soundRetryCount, setSoundCopyCount] = useState({});
   const [soundStatus, setSoundStatus] = useState({});
   const [notesInput, setNotesInput] = useState("");
   const [imageRetryCount, setImageRetryCount] = useState({});
@@ -175,8 +159,6 @@ const AlertDetailPage = () => {
   const [imageLoading, setImageLoading] = useState(true);
   const [soundLoading, setSoundLoading] = useState(true);
   const [cacheBust, setCacheBust] = useState(Date.now());
-
-  console.log("Current user role:", role);
 
   // Convert Firestore timestamp
   const convertTimestampToDateString = useCallback((timestamp) => {
@@ -191,10 +173,8 @@ const AlertDetailPage = () => {
           return date.toLocaleString();
         }
       }
-      console.warn("Unexpected timestamp format:", timestamp);
       return "Unknown";
     } catch (error) {
-      console.warn("Error converting timestamp:", error);
       return "Unknown";
     }
   }, []);
@@ -215,7 +195,6 @@ const AlertDetailPage = () => {
         }
         return docSnap.id;
       } catch (error) {
-        console.error("Error resolving reference:", error);
         return "Unknown";
       }
     }
@@ -266,19 +245,13 @@ const AlertDetailPage = () => {
         location: parseLocation(data.location),
       };
 
-      console.log("Fetched alert status:", formattedData.status);
-
       // Preload images
       if (formattedData.imageUrl?.length > 0) {
-        console.log("Image URLs:", formattedData.imageUrl);
         setImageLoading(true);
         const imageStatusUpdates = {};
         for (const [index, url] of formattedData.imageUrl.entries()) {
           const isAccessible = await preloadImage(url);
           imageStatusUpdates[index] = isAccessible;
-          console.log(
-            `Image ${url} is ${isAccessible ? "accessible" : "inaccessible"}`
-          );
         }
         setImageStatus(imageStatusUpdates);
         setImageLoading(false);
@@ -288,15 +261,11 @@ const AlertDetailPage = () => {
 
       // Preload sounds
       if (formattedData.soundUrl?.length > 0) {
-        console.log("Sound URLs:", formattedData.soundUrl);
         setSoundLoading(true);
         const soundStatusUpdates = {};
         for (const [index, url] of formattedData.soundUrl.entries()) {
           const isAccessible = await preloadSound(url);
           soundStatusUpdates[index] = isAccessible;
-          console.log(
-            `Sound ${url} is ${isAccessible ? "accessible" : "inaccessible"}`
-          );
         }
         setSoundStatus(soundStatusUpdates);
         setSoundLoading(false);
@@ -309,7 +278,6 @@ const AlertDetailPage = () => {
           const resolvedByUser = await resolveReference(data.resolvedBy);
           formattedData.resolvedBy = resolvedByUser;
         } catch (err) {
-          console.error("Error resolving resolvedBy:", err);
           formattedData.resolvedBy = "Unknown User";
         }
       }
@@ -317,7 +285,6 @@ const AlertDetailPage = () => {
       setAlertDetails(formattedData);
       setNotesInput(data.notes || "");
     } catch (error) {
-      console.error("Error fetching alert details:", error);
       setError("Failed to load alert details: " + error.message);
     } finally {
       setLoading(false);
@@ -333,9 +300,6 @@ const AlertDetailPage = () => {
     (index, url) => {
       const currentRetries = imageRetryCount[index] || 0;
       if (currentRetries < 3) {
-        console.log(
-          `Retrying image load for ${url}, attempt ${currentRetries + 1}`
-        );
         setTimeout(() => {
           setImageRetryCount((prev) => ({
             ...prev,
@@ -344,7 +308,6 @@ const AlertDetailPage = () => {
           setImageError((prev) => ({ ...prev, [index]: false }));
         }, 1000);
       } else {
-        console.error(`Failed to load image after 3 attempts: ${url}`);
         setImageError((prev) => ({ ...prev, [index]: true }));
       }
     },
@@ -356,18 +319,14 @@ const AlertDetailPage = () => {
     (index, url) => {
       const currentRetries = soundRetryCount[index] || 0;
       if (currentRetries < 3) {
-        console.log(
-          `Retrying sound load for ${url}, attempt ${currentRetries + 1}`
-        );
         setTimeout(() => {
-          setSoundRetryCount((prev) => ({
+          setSoundCopyCount((prev) => ({
             ...prev,
             [index]: currentRetries + 1,
           }));
           setSoundError((prev) => ({ ...prev, [index]: false }));
         }, 1000);
       } else {
-        console.error(`Failed to load sound after 3 attempts: ${url}`);
         setSoundError((prev) => ({ ...prev, [index]: true }));
       }
     },
@@ -376,7 +335,6 @@ const AlertDetailPage = () => {
 
   // Manual retry for image
   const handleImageRetry = useCallback((index) => {
-    console.log(`Manual retry triggered for image index ${index}`);
     setImageRetryCount((prev) => ({ ...prev, [index]: 0 }));
     setImageError((prev) => ({ ...prev, [index]: false }));
     setImageStatus((prev) => ({ ...prev, [index]: true }));
@@ -385,8 +343,7 @@ const AlertDetailPage = () => {
 
   // Manual retry for sound
   const handleSoundRetry = useCallback((index) => {
-    console.log(`Manual retry triggered for sound index ${index}`);
-    setSoundRetryCount((prev) => ({ ...prev, [index]: 0 }));
+    setSoundCopyCount((prev) => ({ ...prev, [index]: 0 }));
     setSoundError((prev) => ({ ...prev, [index]: false }));
     setSoundStatus((prev) => ({ ...prev, [index]: true }));
     setCacheBust(Date.now());
@@ -400,10 +357,6 @@ const AlertDetailPage = () => {
       const now = Timestamp.now();
 
       const securityTokens = await getSecurityPushTokens();
-      if (securityTokens.length === 0) {
-        console.log("No security members found to notify.");
-      }
-
       await updateDoc(alertRef, {
         status: "approved",
         resolvedAt: now,
@@ -420,9 +373,6 @@ const AlertDetailPage = () => {
           sentAt: now,
           type: "push",
         });
-        console.log(
-          "Notification logged in Firestore notifications collection"
-        );
       }
 
       if (securityTokens.length > 0) {
@@ -438,10 +388,6 @@ const AlertDetailPage = () => {
           )
         );
         await Promise.all(notificationPromises);
-        console.log(
-          "Push notifications sent to security members:",
-          securityTokens
-        );
       }
 
       // Refresh local state and navigate back with approval signal
@@ -451,7 +397,6 @@ const AlertDetailPage = () => {
         params: { refresh: "true", approvedAlertId: alertId },
       });
     } catch (error) {
-      console.error("Error approving alert:", error);
       setError("Failed to approve alert: " + error.message);
     }
   }, [alertId, user?.uid, router, fetchAlertDetails, alertDetails]);
@@ -473,7 +418,6 @@ const AlertDetailPage = () => {
       await fetchAlertDetails();
       router.back();
     } catch (error) {
-      console.error("Error rejecting alert:", error);
       setError("Failed to reject alert: " + error.message);
     }
   }, [alertId, user?.uid, router, fetchAlertDetails]);
@@ -487,7 +431,6 @@ const AlertDetailPage = () => {
       });
       await fetchAlertDetails();
     } catch (error) {
-      console.error("Error updating notes:", error);
       setError("Failed to update notes: " + error.message);
     }
   }, [alertId, notesInput, fetchAlertDetails]);
@@ -704,12 +647,6 @@ const AlertDetailPage = () => {
                           style={styles.image}
                           onError={() => handleImageError(index, item)}
                           resizeMode="cover"
-                          onLoadStart={() =>
-                            console.log(`Loading image: ${cacheBustUrl}`)
-                          }
-                          onLoad={() =>
-                            console.log(`Image loaded: ${cacheBustUrl}`)
-                          }
                         />
                       )}
                     </View>
@@ -873,8 +810,6 @@ const getStatusColor = (status) => {
       return "#FFFFFF";
   }
 };
-
-export default AlertDetailPage;
 
 const styles = StyleSheet.create({
   container: {
@@ -1135,3 +1070,5 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
 });
+
+export default AlertDetailPage;

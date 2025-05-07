@@ -1,4 +1,3 @@
-// services/notificationService.js
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
@@ -26,9 +25,6 @@ export async function registerForPushNotificationsAsync(userId) {
   let token;
 
   if (!Device.isDevice) {
-    console.log(
-      "Running on emulator/simulator: Push notifications not fully supported."
-    );
     return null;
   }
 
@@ -41,35 +37,29 @@ export async function registerForPushNotificationsAsync(userId) {
   }
 
   if (finalStatus !== "granted") {
-    console.log("Failed to get push token: Permission not granted.");
     return null;
   }
 
   try {
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId || "wildlife-c6d3e";
-    console.log("Attempting to get Expo Push Token with projectId:", projectId);
 
     // Get Expo Push Token with FCM integration
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    console.log("Expo Push Token:", token);
 
     if (userId && token) {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { pushToken: token });
-      console.log("Push token stored in Firestore for user:", userId);
     }
 
     return token;
   } catch (error) {
-    console.error("Error getting Expo Push Token:", error.message);
     return null;
   }
 }
 
 export async function sendPushNotification(to, title, body, data = {}) {
   if (!to) {
-    console.log("No push token provided, skipping notification.");
     return;
   }
 
@@ -92,10 +82,7 @@ export async function sendPushNotification(to, title, body, data = {}) {
       body: JSON.stringify(message),
     });
     const result = await response.json();
-    console.log("Push notification sent:", result);
-  } catch (error) {
-    console.error("Error sending push notification:", error.message);
-  }
+  } catch (error) {}
 }
 
 export async function getSecurityPushTokens() {
@@ -109,10 +96,8 @@ export async function getSecurityPushTokens() {
         tokens.push(userData.pushToken);
       }
     });
-    console.log("Security push tokens retrieved:", tokens);
     return tokens;
   } catch (error) {
-    console.error("Error fetching security push tokens:", error.message);
     return [];
   }
 }
