@@ -2528,7 +2528,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: "#fff",
     fontSize: 12,
-    fontFamily: "Poppins-Bold", // Bold for badge text
+    fontFamily: "Poppins-Bold",
   },
 });
 
