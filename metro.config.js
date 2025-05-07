@@ -1,10 +1,18 @@
-const {
-  getSentryExpoConfig
-} = require("@sentry/react-native/metro");
+const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
-const config = getSentryExpoConfig(__dirname);
+module.exports = (async () => {
+  const defaultConfig = await getDefaultConfig(__dirname);
+  const config = getSentryExpoConfig(__dirname, defaultConfig);
 
-// Add glb/gltf support
-config.resolver.assetExts.push("glb", "gltf", "mtl", "obj", "png", "jpg");
+  config.resolver.assetExts.push("glb", "gltf", "mtl", "obj", "png", "jpg");
 
-module.exports = config;
+  config.transformer.minifierConfig = {
+    mangle: false,
+    compress: {
+      warnings: false,
+    },
+  };
+
+  return config;
+})();

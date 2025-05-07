@@ -4,7 +4,6 @@ import {
   View,
   Text,
   Image,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
   StatusBar,
@@ -204,8 +203,8 @@ const HomeScreen = () => {
         </Text>
 
         <View style={styles.buttonContainer}>
-          <Link href="/(auth)/SignUp" asChild>
-            <TouchableOpacity style={styles.button}>
+          <Link href="/(auth)/SignUp" style={styles.button}>
+            <View style={styles.buttonContent}>
               <Text style={styles.buttonText}>Get Started</Text>
               <Ionicons
                 name="arrow-forward"
@@ -213,7 +212,7 @@ const HomeScreen = () => {
                 color="white"
                 style={styles.buttonIcon}
               />
-            </TouchableOpacity>
+            </View>
           </Link>
         </View>
       </Animated.View>
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: "Poppins-Bold", // Bold for title
+    fontFamily: "Poppins-Bold",
     color: "white",
     marginBottom: 20,
     textAlign: "center",
@@ -282,20 +281,24 @@ const styles = StyleSheet.create({
   },
   leafIcon: {
     position: "absolute",
-    top: 15,
-    right: 15,
+    top: "50%",
+    left: "50%",
+    marginLeft: -14, // Half of icon size (28 / 2)
+    marginTop: -40, // Offset upward to avoid overlap
   },
   shieldIcon: {
     position: "absolute",
-    bottom: 15,
-    left: 15,
+    top: "50%",
+    left: "50%",
+    marginLeft: -14, // Half of icon size (28 / 2)
+    marginTop: 12, // Offset downward to avoid overlap
   },
   eyeIcon: {
     position: "absolute",
     top: "50%",
     left: "50%",
-    marginLeft: -20,
-    marginTop: -20,
+    marginLeft: -20, // Half of icon size (40 / 2)
+    marginTop: -14, // Center vertically
   },
   overlay: {
     alignItems: "center",
@@ -303,14 +306,14 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 24,
-    fontFamily: "Poppins-Bold", // Bold for app name
+    fontFamily: "Poppins-Bold",
     color: "#4CAF50",
     textAlign: "center",
     marginBottom: 10,
   },
   description: {
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for description
+    fontFamily: "Poppins-Regular",
     color: "#CCCCCC",
     textAlign: "center",
     marginBottom: 20,
@@ -328,7 +331,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingVertical: 15,
     borderRadius: 25,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -336,6 +338,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
     fontSize: 18,

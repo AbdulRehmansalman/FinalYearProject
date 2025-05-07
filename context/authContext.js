@@ -8,7 +8,6 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Sentry from "@sentry/react-native";
 
 const AuthContext = createContext({});
 
@@ -37,9 +36,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setRole(null);
                 setLoading(false);
-                Sentry.captureMessage(
-                  "User document does not exist during auth state change"
-                );
                 return;
               }
 
@@ -55,7 +51,6 @@ export const AuthProvider = ({ children }) => {
               await AsyncStorage.clear();
             }
           } catch (error) {
-            Sentry.captureException(error);
             setUser(null);
             setRole(null);
             await AsyncStorage.clear();
@@ -66,7 +61,6 @@ export const AuthProvider = ({ children }) => {
 
         return () => unsubscribe();
       } catch (error) {
-        Sentry.captureException(error);
         setLoading(false);
       }
     };
@@ -99,7 +93,6 @@ export const AuthProvider = ({ children }) => {
 
       return user;
     } catch (error) {
-      Sentry.captureException(error);
       throw error;
     }
   };
@@ -128,7 +121,6 @@ export const AuthProvider = ({ children }) => {
 
       return user;
     } catch (error) {
-      Sentry.captureException(error);
       throw error;
     }
   };
@@ -140,7 +132,6 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setRole(null);
     } catch (error) {
-      Sentry.captureException(error);
       throw error;
     }
   };

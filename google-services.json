@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "719831533079",
+    "firebase_url": "https://wildlife-c6d3e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "wildlife-c6d3e",
+    "storage_bucket": "wildlife-c6d3e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:719831533079:android:6751b850b3863cf28d7e52",
+        "android_client_info": {
+          "package_name": "com.anonymous.WildlifeApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3fmw7ouLn_LQdrC4JY0b6hDeOCKcuS2o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

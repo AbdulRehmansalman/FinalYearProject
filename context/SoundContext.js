@@ -6,7 +6,6 @@ import React, {
   useCallback,
 } from "react";
 import { Audio } from "expo-av";
-import * as Sentry from "@sentry/react-native";
 
 const SoundContext = createContext();
 
@@ -24,14 +23,14 @@ export const SoundProvider = ({ children }) => {
           shouldDuckAndroid: true,
         });
       } catch (error) {
-        Sentry.captureException(error);
+        // Silently handle error
       }
     };
     initializeAudio();
 
     return () => {
       if (sound) {
-        sound.unloadAsync().catch((error) => Sentry.captureException(error));
+        sound.unloadAsync().catch(() => {});
       }
     };
   }, [sound]);
@@ -48,7 +47,7 @@ export const SoundProvider = ({ children }) => {
       setSound(newSound);
       setIsPlaying(true);
     } catch (error) {
-      Sentry.captureException(error);
+      // Silently handle error
     }
   }, [sound]);
 
@@ -61,7 +60,7 @@ export const SoundProvider = ({ children }) => {
         setIsPlaying(false);
       }
     } catch (error) {
-      Sentry.captureException(error);
+      // Silently handle error
     }
   }, [sound]);
 

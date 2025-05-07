@@ -11,7 +11,6 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import * as Sentry from "@sentry/react-native";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -53,7 +52,6 @@ export async function registerForPushNotificationsAsync(userId) {
 
     return token;
   } catch (error) {
-    Sentry.captureException(error);
     return null;
   }
 }
@@ -82,7 +80,7 @@ export async function sendPushNotification(to, title, body, data = {}) {
       body: JSON.stringify(message),
     });
   } catch (error) {
-    Sentry.captureException(error);
+    // Silently handle error
   }
 }
 
@@ -99,7 +97,6 @@ export async function getSecurityPushTokens() {
     });
     return tokens;
   } catch (error) {
-    Sentry.captureException(error);
     return [];
   }
 }
