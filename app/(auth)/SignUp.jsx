@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -62,7 +62,6 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      // Use signup from useAuth context, which handles Firebase Auth and Firestore
       await signup(
         formData.email,
         formData.password,
@@ -70,7 +69,7 @@ const SignUp = () => {
         formData.phoneNumber,
         formData.username
       );
-      router.push("/(auth)/SignIn"); // Redirect to dashboard on success
+      router.push("/(auth)/SignIn"); // Redirect to SignIn on success
     } catch (error) {
       setErrors({ form: error.message || "Sign up failed. Please try again." });
     } finally {
@@ -291,8 +290,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerTextContainer: { alignItems: "center" },
-  headerText: { color: "#fff", fontSize: 32, fontWeight: "bold" },
-  subHeaderText: { color: "#ddd", fontSize: 16, marginTop: 5 },
+  headerText: {
+    color: "#fff",
+    fontSize: 32,
+    fontFamily: "Poppins-Bold", // Bold for header
+  },
+  subHeaderText: {
+    color: "#ddd",
+    fontSize: 16,
+    fontFamily: "Poppins-Regular", // Regular for subheader
+    marginTop: 5,
+  },
   formContainer: {
     padding: 20,
     marginTop: -20,
@@ -314,6 +322,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 16,
+    fontFamily: "Poppins-Regular", // Regular for input text
     paddingVertical: 12,
   },
   pickerContainer: {
@@ -325,11 +334,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     backgroundColor: "#333333", // Grey background
     height: 50,
+    fontFamily: "Poppins-Regular", // Regular for picker text
   },
   eyeIcon: { padding: 10 },
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
+    fontFamily: "Poppins-Regular", // Regular for error text
     marginBottom: 15,
     textAlign: "center",
   },
@@ -342,9 +353,21 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  signInLink: { color: "#bbb", fontSize: 16, textAlign: "center" },
-  signInText: { color: "#4CAF50", fontWeight: "bold" },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "Poppins-Bold", // Bold for button text
+  },
+  signInLink: {
+    color: "#bbb",
+    fontSize: 16,
+    fontFamily: "Poppins-Regular", // Regular for link
+    textAlign: "center",
+  },
+  signInText: {
+    color: "#4CAF50",
+    fontFamily: "Poppins-Bold", // Bold for sign-in text
+  },
 });
 
 export default SignUp;

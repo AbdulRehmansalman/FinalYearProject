@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, BounceIn, ZoomIn } from "react-native-reanimated";
@@ -386,6 +387,7 @@ const SensorData = () => {
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
+      <StatusBar backgroundColor="#000" barStyle="light-content" />
     </SafeAreaView>
   );
 };
@@ -403,6 +405,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
+    fontFamily: "Poppins-Regular", // Regular for error text
   },
   retryButton: {
     backgroundColor: "#4CAF50",
@@ -410,7 +413,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
   },
-  retryButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Poppins-Bold", // Bold for retry button text
+  },
   header: {
     padding: 16,
     flexDirection: "row",
@@ -421,7 +428,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
   },
   backButton: { padding: 8 },
-  headerTitle: { color: "#fff", fontSize: 24, fontWeight: "bold" },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontFamily: "Poppins-Bold", // Bold for header title
+  },
   refreshIcon: { padding: 8 },
   deviceInfoContainer: {
     marginHorizontal: 10,
@@ -448,9 +459,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
+    paddingLeft: 5,
   },
   deviceInfoIcon: { marginRight: 8 },
-  deviceInfoText: { color: "#fff", fontSize: 18, fontWeight: "600" },
+  deviceInfoText: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "Poppins-Bold",
+    letterSpacing: 1,
+    paddingLeft: 5,
+  },
   sensorCard: {
     borderRadius: 16,
     padding: 16,
@@ -474,7 +492,7 @@ const styles = StyleSheet.create({
   sensorTitle: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "Poppins-Bold", // Bold for sensor title
     marginLeft: 12,
   },
   sensorStatusRow: {
@@ -483,14 +501,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  sensorStatus: { color: "#fff", fontSize: 16 },
-  sensorDetail: { color: "#999", fontSize: 14 },
+  sensorStatus: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Poppins-Regular", // Regular for sensor status
+  },
+  sensorDetail: {
+    color: "#999",
+    fontSize: 14,
+    fontFamily: "Poppins-Regular", // Regular for sensor details
+  },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   emptyText: {
     color: "#fff",
     fontSize: 16,
     textAlign: "center",
     marginVertical: 8,
+    fontFamily: "Poppins-Regular", // Regular for empty text
   },
   refreshButton: {
     backgroundColor: "#4CAF50",
@@ -511,7 +538,11 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  refreshButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  refreshButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Poppins-Bold", // Bold for refresh button text
+  },
   skeletonContainer: { flex: 1, backgroundColor: "#121212", padding: 10 },
   skeletonHeader: {
     height: 50,

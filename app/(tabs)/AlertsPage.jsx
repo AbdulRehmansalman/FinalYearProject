@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  TextInput,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -31,9 +30,14 @@ import {
   getDoc,
   doc,
   startAfter,
+  Timestamp,
 } from "firebase/firestore";
 import { useAuth } from "../../context/authContext";
 import { StatusBar } from "expo-status-bar";
+import { useSound } from "../../context/SoundContext";
+
+// Persist previousAlerts outside the component to survive navigation
+const previousAlerts = new Map();
 
 const PAGE_SIZE = 10;
 
@@ -46,31 +50,180 @@ const AlertsPage = () => {
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [isRefreshingButton, setIsRefreshingButton] = useState(false);
 
   const deviceCache = useRef(new Map()).current;
   const unsubscribeRef = useRef(null);
   const isMountedRef = useRef(true);
+  const isListenerActive = useRef(false);
+  const initialFetchDone = useRef(false); // Track if initial fetch is done
 
   const router = useRouter();
   const { user, role, logout } = useAuth();
+  const { playSound, stopSound, isPlaying } = useSound();
+
+  const setupRealTimeListener = useCallback(() => {
+    if (!user || !isMountedRef.current) return;
+
+    const oneHourAgo = Timestamp.fromDate(
+      new Date(Date.now() - 60 * 60 * 1000)
+    );
+    const alertsQuery = query(
+      collection(db, "alerts"),
+      where("occur_at", ">=", oneHourAgo),
+      limit(PAGE_SIZE)
+    );
+
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+    }
+
+    unsubscribeRef.current = onSnapshot(
+      alertsQuery,
+      async (querySnapshot) => {
+        if (!isMountedRef.current) return;
+
+        const allDocs = querySnapshot.docs;
+        const newAlerts = await Promise.all(allDocs.map(transformAlertData));
+        const filteredAlerts = newAlerts.filter((alert) => alert !== null);
+
+        const sortedAlerts = filteredAlerts.sort((a, b) => {
+          const aTime = a.occurAtTimestamp
+            ? typeof a.occurAtTimestamp.toDate === "function"
+              ? a.occurAtTimestamp.toDate().getTime()
+              : new Date(a.occurAtTimestamp).getTime()
+            : 0;
+          const bTime = b.occurAtTimestamp
+            ? typeof b.occurAtTimestamp.toDate === "function"
+              ? b.occurAtTimestamp.toDate().getTime()
+              : new Date(b.occurAtTimestamp).getTime()
+            : 0;
+          return bTime - aTime;
+        });
+
+        if (!isMountedRef.current) return;
+
+        // Track changes to detect new approvals
+        const currentAlertsMap = new Map(
+          sortedAlerts.map((alert) => [alert.id, alert.status])
+        );
+
+        let shouldPlaySound = false;
+        if (role === "security" && !isPlaying) {
+          for (const [id, currentStatus] of currentAlertsMap) {
+            const prevStatus = previousAlerts.get(id);
+            if (currentStatus === "approved" && prevStatus !== "approved") {
+              shouldPlaySound = true;
+              break;
+            }
+          }
+        }
+
+        // Update previous alerts and play sound if needed
+        sortedAlerts.forEach((alert) =>
+          previousAlerts.set(alert.id, alert.status)
+        );
+        if (shouldPlaySound) {
+          playSound();
+        }
+
+        setAlerts(sortedAlerts);
+        applyFiltersAndSearch(sortedAlerts);
+
+        setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        setHasMore(querySnapshot.docs.length === PAGE_SIZE);
+        setLoading(false);
+        setError(null);
+      },
+      (error) => {
+        if (!isMountedRef.current) return;
+        console.error("Real-time listener error:", error);
+        if (
+          error.code === "unavailable" ||
+          error.message.includes("network-request-failed")
+        ) {
+          setError("No Internet. Please check your connection.");
+        } else {
+          setError("Failed to load alerts in real-time. Retrying...");
+          setTimeout(() => {
+            fetchAlerts(true);
+          }, 2000);
+        }
+      }
+    );
+  }, [
+    user,
+    transformAlertData,
+    applyFiltersAndSearch,
+    role,
+    playSound,
+    isPlaying,
+  ]);
 
   useEffect(() => {
     isMountedRef.current = true;
+    if (!initialFetchDone.current) {
+      fetchAlerts(true); // Initial fetch on mount
+      initialFetchDone.current = true;
+    }
 
     return () => {
       isMountedRef.current = false;
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
+        isListenerActive.current = false;
       }
     };
-  }, []);
+  }, [fetchAlerts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isListenerActive.current && user) {
+        console.log("Setting up real-time listener on focus");
+        isListenerActive.current = true;
+        setupRealTimeListener();
+      }
+
+      // Handle navigation params
+      const { refresh, approvedAlertId } = router.params || {};
+      if (refresh === "true" && approvedAlertId) {
+        const alertDoc = doc(db, "alerts", approvedAlertId);
+        getDoc(alertDoc).then((docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            previousAlerts.set(approvedAlertId, data.status.toLowerCase());
+          }
+        });
+        router.setParams({ refresh: undefined, approvedAlertId: undefined }); // Clear params
+      }
+
+      return () => {
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+          isListenerActive.current = false;
+        }
+      };
+    }, [user, setupRealTimeListener, router])
+  );
 
   const formatDate = useCallback((timestamp) => {
-    return timestamp?.toDate().toLocaleString() || "N/A";
+    try {
+      if (!timestamp) return "N/A";
+      if (typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toLocaleString();
+      }
+      if (typeof timestamp === "string" || typeof timestamp === "number") {
+        return new Date(timestamp).toLocaleString();
+      }
+      return "N/A";
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "N/A";
+    }
   }, []);
 
   const resolveReference = useCallback(
@@ -103,6 +256,11 @@ const AlertsPage = () => {
       if (!isMountedRef.current) return null;
 
       const data = doc.data();
+      if (!data) {
+        console.warn("Alert document has no data:", doc.id);
+        return null;
+      }
+
       const deviceId = await resolveReference(data.deviceId, "devices");
       const detections = data.detections || {};
       const detectionDetails = [];
@@ -157,13 +315,40 @@ const AlertsPage = () => {
 
   const applyFiltersAndSearch = useCallback(
     (alertsList) => {
-      if (role === "security") {
-        setFilteredAlerts(alertsList);
+      console.log(
+        "Applying filters - filterStatus:",
+        filterStatus,
+        "filterType:",
+        filterType
+      );
+      if (!alertsList || !Array.isArray(alertsList)) {
+        console.warn(
+          "applyFiltersAndSearch received invalid alertsList:",
+          alertsList
+        );
+        setFilteredAlerts([]);
         return;
       }
 
       let result = [...alertsList];
-      const queryLower = searchQuery.toLowerCase().trim();
+
+      const oneHourAgo = Timestamp.now().toDate().getTime() - 60 * 60 * 1000;
+      result = result.filter((alert) => {
+        const alertTime = alert.occurAtTimestamp
+          ? typeof alert.occurAtTimestamp.toDate === "function"
+            ? alert.occurAtTimestamp.toDate().getTime()
+            : new Date(alert.occurAtTimestamp).getTime()
+          : 0;
+        const isWithinHour = alertTime >= oneHourAgo;
+        console.log(
+          `Alert ${alert.id} time: ${alertTime}, Within hour: ${isWithinHour}`
+        );
+        return isWithinHour;
+      });
+
+      if (role === "security") {
+        result = result.filter((alert) => alert.status === "approved");
+      }
 
       if (filterStatus !== "all") {
         result = result.filter((alert) => alert.status === filterStatus);
@@ -175,23 +360,16 @@ const AlertsPage = () => {
         );
       }
 
-      if (queryLower) {
-        result = result.filter(
-          (alert) =>
-            alert.deviceId.toLowerCase().includes(queryLower) ||
-            alert.notes.toLowerCase().includes(queryLower) ||
-            alert.detections.some(
-              (d) =>
-                d.type.toLowerCase().includes(queryLower) ||
-                (d.imageUrl && d.imageUrl.toLowerCase().includes(queryLower)) ||
-                (d.soundUrl && d.soundUrl.toLowerCase().includes(queryLower))
-            )
-        );
-      }
-
-      setFilteredAlerts(result);
+      console.log("Filtered alerts result:", result);
+      setFilteredAlerts((prev) => {
+        const newFiltered = result;
+        return newFiltered.length !== prev.length ||
+          newFiltered.some((item, index) => item.id !== prev[index]?.id)
+          ? newFiltered
+          : prev;
+      });
     },
-    [role, searchQuery, filterStatus, filterType]
+    [role, filterStatus, filterType]
   );
 
   const fetchAlerts = useCallback(
@@ -208,25 +386,29 @@ const AlertsPage = () => {
       setIsLoadingMore(!isRefresh);
 
       try {
-        const baseQuery =
-          role === "admin"
-            ? collection(db, "alerts")
-            : query(
-                collection(db, "alerts"),
-                where("status", "==", "approved")
-              );
-        const alertsQuery =
-          isRefresh || !lastDoc
-            ? query(baseQuery, limit(PAGE_SIZE))
-            : query(baseQuery, startAfter(lastDoc), limit(PAGE_SIZE));
+        const oneHourAgo = Timestamp.fromDate(
+          new Date(Date.now() - 60 * 60 * 1000)
+        );
+        const alertsQuery = query(
+          collection(db, "alerts"),
+          where("occur_at", ">=", oneHourAgo),
+          limit(PAGE_SIZE)
+        );
 
-        const querySnapshot = await getDocs(alertsQuery);
+        const querySnapshot = await getDocs(
+          isRefresh || !lastDoc
+            ? alertsQuery
+            : query(alertsQuery, startAfter(lastDoc))
+        );
         if (querySnapshot.empty) {
           if (isRefresh) {
             setAlerts([]);
             setFilteredAlerts([]);
           }
           setHasMore(false);
+          setLoading(false);
+          setRefreshing(false);
+          setIsLoadingMore(false);
           return;
         }
 
@@ -234,11 +416,19 @@ const AlertsPage = () => {
           querySnapshot.docs.map(transformAlertData)
         );
         const filteredAlerts = newAlerts.filter((alert) => alert !== null);
-        const sortedAlerts = filteredAlerts.sort(
-          (a, b) =>
-            (b.occurAtTimestamp?.toDate().getTime() || 0) -
-            (a.occurAtTimestamp?.toDate().getTime() || 0)
-        );
+        const sortedAlerts = filteredAlerts.sort((a, b) => {
+          const aTime = a.occurAtTimestamp
+            ? typeof a.occurAtTimestamp.toDate === "function"
+              ? a.occurAtTimestamp.toDate().getTime()
+              : new Date(a.occurAtTimestamp).getTime()
+            : 0;
+          const bTime = b.occurAtTimestamp
+            ? typeof b.occurAtTimestamp.toDate === "function"
+              ? b.occurAtTimestamp.toDate().getTime()
+              : new Date(b.occurAtTimestamp).getTime()
+            : 0;
+          return bTime - aTime;
+        });
 
         if (!isMountedRef.current) return;
 
@@ -247,13 +437,20 @@ const AlertsPage = () => {
           isRefresh ? sortedAlerts : [...prev, ...sortedAlerts]
         );
         applyFiltersAndSearch(
-          isRefresh ? sortedAlerts : [...prev, ...sortedAlerts]
+          isRefresh ? sortedAlerts : [...alerts, ...sortedAlerts]
         );
         setHasMore(querySnapshot.docs.length === PAGE_SIZE);
       } catch (error) {
         if (!isMountedRef.current) return;
         console.error("Error fetching alerts:", error);
-        setError("Failed to fetch alerts. Please try again.");
+        if (
+          error.code === "unavailable" ||
+          error.message.includes("network-request-failed")
+        ) {
+          setError("No Internet. Please check your connection.");
+        } else {
+          setError("Failed to fetch alerts. Please try again.");
+        }
       } finally {
         if (!isMountedRef.current) return;
         setLoading(false);
@@ -262,12 +459,12 @@ const AlertsPage = () => {
       }
     },
     [
-      role,
       transformAlertData,
       lastDoc,
       hasMore,
       isLoadingMore,
       applyFiltersAndSearch,
+      alerts,
     ]
   );
 
@@ -275,84 +472,28 @@ const AlertsPage = () => {
     fetchAlerts(false);
   }, [fetchAlerts]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!user) return;
-
-      const alertsQuery =
-        role === "admin"
-          ? query(collection(db, "alerts"), limit(PAGE_SIZE))
-          : query(
-              collection(db, "alerts"),
-              where("status", "==", "approved"),
-              limit(PAGE_SIZE)
-            );
-
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
-
-      unsubscribeRef.current = onSnapshot(
-        alertsQuery,
-        async (querySnapshot) => {
-          if (querySnapshot.empty) {
-            if (!isMountedRef.current) return;
-            setAlerts([]);
-            setFilteredAlerts([]);
-            setHasMore(false);
-            setLoading(false);
-            return;
-          }
-
-          const alertsList = await Promise.all(
-            querySnapshot.docs.map(transformAlertData)
-          );
-          const filteredAlertsList = alertsList.filter(
-            (alert) => alert !== null
-          );
-          const sortedAlerts = filteredAlertsList.sort(
-            (a, b) =>
-              (b.occurAtTimestamp?.toDate().getTime() || 0) -
-              (a.occurAtTimestamp?.toDate().getTime() || 0)
-          );
-
-          if (!isMountedRef.current) return;
-
-          setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-          setAlerts(sortedAlerts);
-          applyFiltersAndSearch(sortedAlerts);
-          setHasMore(querySnapshot.docs.length === PAGE_SIZE);
-          setLoading(false);
-          setError(null);
-        },
-        (error) => {
-          if (!isMountedRef.current) return;
-          console.error("Real-time listener error:", error);
-          setError("Failed to load alerts in real-time. Retrying...");
-          fetchAlerts(true);
-        }
-      );
-
-      return () => {
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-          unsubscribeRef.current = null;
-        }
-      };
-    }, [user, role, transformAlertData, applyFiltersAndSearch, fetchAlerts])
-  );
+  useEffect(() => {
+    applyFiltersAndSearch(alerts);
+  }, [filterStatus, filterType, alerts, applyFiltersAndSearch]);
 
   const handleLogout = useCallback(async () => {
     try {
+      setIsRefreshingButton(true);
       await logout();
       router.replace("/(auth)/SignIn");
     } catch (error) {
       console.error("Logout error:", error);
       Alert.alert("Error", "Failed to log out. Please try again.");
+    } finally {
+      setIsRefreshingButton(false);
     }
   }, [logout, router]);
 
   const pageData = useMemo(() => {
+    console.log(
+      "Recomputing pageData with filteredAlerts:",
+      filteredAlerts.length
+    );
     const baseData = [
       { type: "header", id: "header" },
       ...(filteredAlerts.length > 0
@@ -377,16 +518,37 @@ const AlertsPage = () => {
               <Text style={styles.headerText}>Alerts</Text>
               <View style={styles.headerButtons}>
                 <TouchableOpacity
-                  style={styles.refreshButton}
-                  onPress={() => fetchAlerts(true)}
+                  style={[
+                    styles.refreshButton,
+                    isRefreshingButton && styles.buttonPressed,
+                  ]}
+                  onPress={() => {
+                    setIsRefreshingButton(true);
+                    fetchAlerts(true).finally(() =>
+                      setIsRefreshingButton(false)
+                    );
+                  }}
+                  disabled={isRefreshingButton}
                 >
-                  <Icon name="refresh" size={20} color="#fff" />
+                  <Icon
+                    name="refresh"
+                    size={20}
+                    color={isRefreshingButton ? "#888" : "#fff"}
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.logoutButton}
+                  style={[
+                    styles.logoutButton,
+                    isRefreshingButton && styles.buttonPressed,
+                  ]}
                   onPress={handleLogout}
+                  disabled={isRefreshingButton}
                 >
-                  <Icon name="log-out-outline" size={20} color="#fff" />
+                  <Icon
+                    name="log-out-outline"
+                    size={20}
+                    color={isRefreshingButton ? "#888" : "#fff"}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -394,13 +556,9 @@ const AlertsPage = () => {
         case "filters":
           return (
             <View style={styles.filterContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search alerts..."
-                placeholderTextColor="#999"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
+              <View style={styles.alertsTitleContainer}>
+                <Text style={styles.alertsTitle}>Alerts</Text>
+              </View>
               <View style={styles.filterButtons}>
                 {["all", "pending", "approved", "rejected"].map((status) => (
                   <TouchableOpacity
@@ -408,8 +566,12 @@ const AlertsPage = () => {
                     style={[
                       styles.filterButton,
                       filterStatus === status && styles.activeFilter,
+                      filterStatus === status && styles.buttonPressed,
                     ]}
-                    onPress={() => setFilterStatus(status)}
+                    onPress={() => {
+                      console.log("Setting filterStatus to:", status);
+                      setFilterStatus(status);
+                    }}
                   >
                     <Text style={styles.filterButtonText}>
                       {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -424,8 +586,12 @@ const AlertsPage = () => {
                     style={[
                       styles.filterButton,
                       filterType === type && styles.activeFilter,
+                      filterType === type && styles.buttonPressed,
                     ]}
-                    onPress={() => setFilterType(type)}
+                    onPress={() => {
+                      console.log("Setting filterType to:", type);
+                      setFilterType(type);
+                    }}
                   >
                     <Text style={styles.filterButtonText}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -492,7 +658,7 @@ const AlertsPage = () => {
                             <Text style={styles.detectionType}>
                               {detection.type.toUpperCase()}
                             </Text>
-                            {detection.confidence ? (
+                            {detection.confidence !== null ? (
                               <Text style={styles.detectionConfidence}>
                                 {(detection.confidence * 100).toFixed(0)}%
                               </Text>
@@ -522,15 +688,7 @@ const AlertsPage = () => {
           return null;
       }
     },
-    [
-      role,
-      fetchAlerts,
-      router,
-      searchQuery,
-      filterStatus,
-      filterType,
-      handleLogout,
-    ]
+    [role, fetchAlerts, router, filterStatus, filterType, handleLogout, alerts]
   );
 
   const renderFooter = useCallback(() => {
@@ -558,10 +716,16 @@ const AlertsPage = () => {
         <View style={styles.header}>
           <Text style={styles.headerText}>Alerts</Text>
           <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.refreshButton}>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={() => fetchAlerts(true)}
+            >
               <Icon name="refresh" size={20} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.logoutButton}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
               <Icon name="log-out-outline" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -623,20 +787,22 @@ const AlertsPage = () => {
         windowSize={5}
         removeClippedSubviews={true}
       />
+      {role === "security" && isPlaying && (
+        <View style={styles.actionContainer}>
+          <TouchableOpacity style={styles.stopAlarmButton} onPress={stopSound}>
+            <Icon name="stop-circle-outline" size={20} color="#fff" />
+            <Text style={styles.stopAlarmText}>Stop Alarm</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <StatusBar style="light" />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
+  loadingContainer: { flex: 1, backgroundColor: "#121212" },
   errorContainer: {
     backgroundColor: "#2a2a2a",
     padding: 10,
@@ -646,19 +812,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  errorText: {
-    color: "#D32F2F",
-    fontSize: 14,
-  },
-  retryButton: {
-    backgroundColor: "#4CAF50",
-    padding: 5,
-    borderRadius: 5,
-  },
-  retryText: {
-    color: "#fff",
-    fontSize: 14,
-  },
+  errorText: { color: "#D32F2F", fontSize: 14 },
+  retryButton: { backgroundColor: "#4CAF50", padding: 5, borderRadius: 5 },
+  retryText: { color: "#fff", fontSize: 14 },
   header: {
     padding: 15,
     flexDirection: "row",
@@ -670,47 +826,44 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
+    marginTop: 15,
   },
-  headerButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  refreshButton: {
-    padding: 5,
-    marginRight: 10,
-  },
-  logoutButton: {
-    padding: 5,
-  },
-  filterContainer: {
-    padding: 10,
-    backgroundColor: "#1a1a1a",
-  },
-  searchInput: {
+  headerButtons: { flexDirection: "row", alignItems: "center", marginTop: 15 },
+  refreshButton: { padding: 5, marginRight: 10 },
+  logoutButton: { padding: 5 },
+  filterContainer: { padding: 10, backgroundColor: "#1a1a1a" },
+  alertsTitleContainer: {
     backgroundColor: "#2a2a2a",
-    color: "#fff",
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderRadius: 8,
     marginBottom: 10,
+    alignItems: "center",
+  },
+  alertsTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   filterButtons: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-around",
     marginBottom: 10,
   },
   filterButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: "#333",
     borderRadius: 5,
+    margin: 5,
+    minWidth: "20%",
+    alignItems: "center",
   },
-  activeFilter: {
-    backgroundColor: "#4CAF50",
-  },
-  filterButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  activeFilter: { backgroundColor: "#4CAF50" },
+  buttonPressed: { opacity: 0.7 },
+  filterButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   alertItem: {
     backgroundColor: "#222",
     padding: 12,
@@ -723,20 +876,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-  alertContent: {
-    flexDirection: "column",
-  },
+  alertContent: { flexDirection: "column" },
   alertHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
-  alertTimestamp: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  alertTimestamp: { color: "#fff", fontSize: 14, fontWeight: "600" },
   alertStatus: {
     fontSize: 12,
     fontWeight: "bold",
@@ -746,21 +893,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     textTransform: "capitalize",
   },
-  alertDetails: {
-    marginBottom: 8,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  detailIcon: {
-    marginRight: 6,
-  },
-  alertDetailText: {
-    color: "#bbb",
-    fontSize: 13,
-  },
+  alertDetails: { marginBottom: 8 },
+  detailRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  detailIcon: { marginRight: 6 },
+  alertDetailText: { color: "#bbb", fontSize: 13 },
   detectionsContainer: {
     borderTopWidth: 1,
     borderTopColor: "#333",
@@ -802,10 +938,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
   },
-  detectionTimestamp: {
-    color: "#999",
-    fontSize: 12,
-  },
+  detectionTimestamp: { color: "#999", fontSize: 12 },
   receivedText: {
     color: "#4CAF50",
     fontSize: 12,
@@ -819,10 +952,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
-  footerLoader: {
-    padding: 10,
-    alignItems: "center",
-  },
+  footerLoader: { padding: 10, alignItems: "center" },
   skeletonItem: {
     backgroundColor: "#222",
     padding: 12,
@@ -848,13 +978,33 @@ const styles = StyleSheet.create({
     width: 60,
     borderRadius: 12,
   },
-  skeletonDetails: {
-    marginBottom: 8,
-  },
+  skeletonDetails: { marginBottom: 8 },
   skeletonDetection: {
     backgroundColor: "#2a2a2a",
     padding: 8,
     borderRadius: 6,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+    paddingHorizontal: 10,
+    marginBottom: 1,
+  },
+  stopAlarmButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D32F2F",
+    margin: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  stopAlarmText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });
 
