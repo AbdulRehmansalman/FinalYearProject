@@ -2505,7 +2505,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     marginTop: 4,
-    fontFamily: "Poppins-Regular", // Regular for tab labels
+    fontFamily: "Poppins-Regular",
     textAlign: "center",
   },
   tabIconContainer: {
