@@ -40,7 +40,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/logos/logo.png",
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./google-services.json",
