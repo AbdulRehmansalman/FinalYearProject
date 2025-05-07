@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { Audio } from "expo-av";
+import * as Sentry from "@sentry/react-native";
 
 const SoundContext = createContext();
 
@@ -13,7 +14,6 @@ export const SoundProvider = ({ children }) => {
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Initialize audio mode
   useEffect(() => {
     const initializeAudio = async () => {
       try {
@@ -24,21 +24,18 @@ export const SoundProvider = ({ children }) => {
           shouldDuckAndroid: true,
         });
       } catch (error) {
-        console.error("Error setting audio mode:", error);
+        Sentry.captureException(error);
       }
     };
     initializeAudio();
 
     return () => {
       if (sound) {
-        sound
-          .unloadAsync()
-          .catch((error) => console.error("Error unloading sound:", error));
+        sound.unloadAsync().catch((error) => Sentry.captureException(error));
       }
     };
   }, [sound]);
 
-  // Play local sound
   const playSound = useCallback(async () => {
     try {
       if (sound) {
@@ -51,11 +48,10 @@ export const SoundProvider = ({ children }) => {
       setSound(newSound);
       setIsPlaying(true);
     } catch (error) {
-      console.error("Error playing local sound:", error);
+      Sentry.captureException(error);
     }
   }, [sound]);
 
-  // Stop sound
   const stopSound = useCallback(async () => {
     try {
       if (sound) {
@@ -65,7 +61,7 @@ export const SoundProvider = ({ children }) => {
         setIsPlaying(false);
       }
     } catch (error) {
-      console.error("Error stopping sound in context:", error);
+      Sentry.captureException(error);
     }
   }, [sound]);
 

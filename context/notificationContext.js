@@ -1,4 +1,3 @@
-// context/notificationContext.js
 import React, { createContext, useContext, useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotificationsAsync } from "../services/notificationService";
@@ -11,7 +10,6 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      // Register for push notifications when the user logs in
       registerForPushNotificationsAsync(user.uid);
     }
   }, [user]);

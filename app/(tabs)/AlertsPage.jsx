@@ -58,7 +58,7 @@ const AlertsPage = () => {
   const unsubscribeRef = useRef(null);
   const isMountedRef = useRef(true);
   const isListenerActive = useRef(false);
-  const initialFetchDone = useRef(false); // Track if initial fetch is done
+  const initialFetchDone = useRef(false);
 
   const router = useRouter();
   const { user, role, logout } = useAuth();
@@ -105,7 +105,6 @@ const AlertsPage = () => {
 
         if (!isMountedRef.current) return;
 
-        // Track changes to detect new approvals
         const currentAlertsMap = new Map(
           sortedAlerts.map((alert) => [alert.id, alert.status])
         );
@@ -121,7 +120,6 @@ const AlertsPage = () => {
           }
         }
 
-        // Update previous alerts and play sound if needed
         sortedAlerts.forEach((alert) =>
           previousAlerts.set(alert.id, alert.status)
         );
@@ -164,7 +162,7 @@ const AlertsPage = () => {
   useEffect(() => {
     isMountedRef.current = true;
     if (!initialFetchDone.current) {
-      fetchAlerts(true); // Initial fetch on mount
+      fetchAlerts(true);
       initialFetchDone.current = true;
     }
 
@@ -185,7 +183,6 @@ const AlertsPage = () => {
         setupRealTimeListener();
       }
 
-      // Handle navigation params
       const { refresh, approvedAlertId } = router.params || {};
       if (refresh === "true" && approvedAlertId) {
         const alertDoc = doc(db, "alerts", approvedAlertId);
@@ -195,7 +192,7 @@ const AlertsPage = () => {
             previousAlerts.set(approvedAlertId, data.status.toLowerCase());
           }
         });
-        router.setParams({ refresh: undefined, approvedAlertId: undefined }); // Clear params
+        router.setParams({ refresh: undefined, approvedAlertId: undefined });
       }
 
       return () => {
@@ -218,7 +215,7 @@ const AlertsPage = () => {
         return new Date(timestamp).toLocaleString();
       }
       return "N/A";
-    } catch (error) {
+    } catch {
       return "N/A";
     }
   }, []);
@@ -240,7 +237,7 @@ const AlertsPage = () => {
           : docRef.id;
         deviceCache.set(fieldId, resolvedValue);
         return resolvedValue;
-      } catch (error) {
+      } catch {
         return "Unknown";
       }
     },
@@ -324,8 +321,7 @@ const AlertsPage = () => {
             ? alert.occurAtTimestamp.toDate().getTime()
             : new Date(alert.occurAtTimestamp).getTime()
           : 0;
-        const isWithinHour = alertTime >= oneHourAgo;
-        return isWithinHour;
+        return alertTime >= oneHourAgo;
       });
 
       if (role === "security") {
@@ -461,7 +457,7 @@ const AlertsPage = () => {
       setIsRefreshingButton(true);
       await logout();
       router.replace("/(auth)/SignIn");
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to log out. Please try again.");
     } finally {
       setIsRefreshingButton(false);

@@ -11,8 +11,8 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import * as Sentry from "@sentry/react-native";
 
-// Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -44,7 +44,6 @@ export async function registerForPushNotificationsAsync(userId) {
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId || "wildlife-c6d3e";
 
-    // Get Expo Push Token with FCM integration
     token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
 
     if (userId && token) {
@@ -54,6 +53,7 @@ export async function registerForPushNotificationsAsync(userId) {
 
     return token;
   } catch (error) {
+    Sentry.captureException(error);
     return null;
   }
 }
@@ -73,7 +73,7 @@ export async function sendPushNotification(to, title, body, data = {}) {
   };
 
   try {
-    const response = await fetch("https://exp.host/--/api/v2/push/send", {
+    await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -81,8 +81,9 @@ export async function sendPushNotification(to, title, body, data = {}) {
       },
       body: JSON.stringify(message),
     });
-    const result = await response.json();
-  } catch (error) {}
+  } catch (error) {
+    Sentry.captureException(error);
+  }
 }
 
 export async function getSecurityPushTokens() {
@@ -98,6 +99,7 @@ export async function getSecurityPushTokens() {
     });
     return tokens;
   } catch (error) {
+    Sentry.captureException(error);
     return [];
   }
 }

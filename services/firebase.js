@@ -7,14 +7,18 @@ import {
 import { getFirestore, collection } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Firebase configuration
+// Firebase configuration (should be moved to environment variables)
 const firebaseConfig = {
-  apiKey: "AIzaSyD91v_zER4R_O3l4d20gCCIfC-0GjiVv1E",
-  authDomain: "wildlife-c6d3e.firebaseapp.com",
-  projectId: "wildlife-c6d3e",
-  storageBucket: "wildlife-c6d3e.appspot.com",
-  messagingSenderId: "719831533079",
-  appId: "1:719831533079:web:d376af5067b4d45d8d7e52", // Web appId; consider adding Android appId if available
+  apiKey:
+    process.env.FIREBASE_API_KEY || "AIzaSyD91v_zER4R_O3l4d20gCCIfC-0GjiVv1E",
+  authDomain:
+    process.env.FIREBASE_AUTH_DOMAIN || "wildlife-c6d3e.firebaseapp.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || "wildlife-c6d3e",
+  storageBucket:
+    process.env.FIREBASE_STORAGE_BUCKET || "wildlife-c6d3e.appspot.com",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "719831533079",
+  appId:
+    process.env.FIREBASE_APP_ID || "1:719831533079:web:d376af5067b4d45d8d7e52",
 };
 
 // Initialize Firebase with error handling
