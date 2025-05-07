@@ -139,7 +139,6 @@ const AlertsPage = () => {
       },
       (error) => {
         if (!isMountedRef.current) return;
-        console.error("Real-time listener error:", error);
         if (
           error.code === "unavailable" ||
           error.message.includes("network-request-failed")
@@ -182,7 +181,6 @@ const AlertsPage = () => {
   useFocusEffect(
     useCallback(() => {
       if (!isListenerActive.current && user) {
-        console.log("Setting up real-time listener on focus");
         isListenerActive.current = true;
         setupRealTimeListener();
       }
@@ -221,7 +219,6 @@ const AlertsPage = () => {
       }
       return "N/A";
     } catch (error) {
-      console.error("Error formatting date:", error);
       return "N/A";
     }
   }, []);
@@ -244,7 +241,6 @@ const AlertsPage = () => {
         deviceCache.set(fieldId, resolvedValue);
         return resolvedValue;
       } catch (error) {
-        console.error(`Error resolving ${path} reference:`, error);
         return "Unknown";
       }
     },
@@ -257,7 +253,6 @@ const AlertsPage = () => {
 
       const data = doc.data();
       if (!data) {
-        console.warn("Alert document has no data:", doc.id);
         return null;
       }
 
@@ -315,17 +310,7 @@ const AlertsPage = () => {
 
   const applyFiltersAndSearch = useCallback(
     (alertsList) => {
-      console.log(
-        "Applying filters - filterStatus:",
-        filterStatus,
-        "filterType:",
-        filterType
-      );
       if (!alertsList || !Array.isArray(alertsList)) {
-        console.warn(
-          "applyFiltersAndSearch received invalid alertsList:",
-          alertsList
-        );
         setFilteredAlerts([]);
         return;
       }
@@ -340,9 +325,6 @@ const AlertsPage = () => {
             : new Date(alert.occurAtTimestamp).getTime()
           : 0;
         const isWithinHour = alertTime >= oneHourAgo;
-        console.log(
-          `Alert ${alert.id} time: ${alertTime}, Within hour: ${isWithinHour}`
-        );
         return isWithinHour;
       });
 
@@ -360,7 +342,6 @@ const AlertsPage = () => {
         );
       }
 
-      console.log("Filtered alerts result:", result);
       setFilteredAlerts((prev) => {
         const newFiltered = result;
         return newFiltered.length !== prev.length ||
@@ -442,7 +423,6 @@ const AlertsPage = () => {
         setHasMore(querySnapshot.docs.length === PAGE_SIZE);
       } catch (error) {
         if (!isMountedRef.current) return;
-        console.error("Error fetching alerts:", error);
         if (
           error.code === "unavailable" ||
           error.message.includes("network-request-failed")
@@ -482,7 +462,6 @@ const AlertsPage = () => {
       await logout();
       router.replace("/(auth)/SignIn");
     } catch (error) {
-      console.error("Logout error:", error);
       Alert.alert("Error", "Failed to log out. Please try again.");
     } finally {
       setIsRefreshingButton(false);
@@ -490,10 +469,6 @@ const AlertsPage = () => {
   }, [logout, router]);
 
   const pageData = useMemo(() => {
-    console.log(
-      "Recomputing pageData with filteredAlerts:",
-      filteredAlerts.length
-    );
     const baseData = [
       { type: "header", id: "header" },
       ...(filteredAlerts.length > 0
@@ -569,7 +544,6 @@ const AlertsPage = () => {
                       filterStatus === status && styles.buttonPressed,
                     ]}
                     onPress={() => {
-                      console.log("Setting filterStatus to:", status);
                       setFilterStatus(status);
                     }}
                   >
@@ -589,7 +563,6 @@ const AlertsPage = () => {
                       filterType === type && styles.buttonPressed,
                     ]}
                     onPress={() => {
-                      console.log("Setting filterType to:", type);
                       setFilterType(type);
                     }}
                   >

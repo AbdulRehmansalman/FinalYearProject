@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
-    fontFamily: "Poppins-Regular", // Regular for error text
+    fontFamily: "Poppins-Regular",
   },
   retryButton: {
     backgroundColor: "#4CAF50",
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Bold", // Bold for retry button text
+    fontFamily: "Poppins-Bold",
   },
   header: {
     padding: 16,
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: "#fff",
     fontSize: 24,
-    fontFamily: "Poppins-Bold", // Bold for header title
+    fontFamily: "Poppins-Bold",
   },
   refreshIcon: { padding: 8 },
   deviceInfoContainer: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   sensorTitle: {
     color: "#fff",
     fontSize: 18,
-    fontFamily: "Poppins-Bold", // Bold for sensor title
+    fontFamily: "Poppins-Bold",
     marginLeft: 12,
   },
   sensorStatusRow: {
@@ -504,12 +504,12 @@ const styles = StyleSheet.create({
   sensorStatus: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Regular", // Regular for sensor status
+    fontFamily: "Poppins-Regular",
   },
   sensorDetail: {
     color: "#999",
     fontSize: 14,
-    fontFamily: "Poppins-Regular", // Regular for sensor details
+    fontFamily: "Poppins-Regular",
   },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   emptyText: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginVertical: 8,
-    fontFamily: "Poppins-Regular", // Regular for empty text
+    fontFamily: "Poppins-Regular",
   },
   refreshButton: {
     backgroundColor: "#4CAF50",
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   refreshButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Poppins-Bold", // Bold for refresh button text
+    fontFamily: "Poppins-Bold",
   },
   skeletonContainer: { flex: 1, backgroundColor: "#121212", padding: 10 },
   skeletonHeader: {

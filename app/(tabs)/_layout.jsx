@@ -53,9 +53,7 @@ class ErrorBoundary extends Component {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
+  componentDidCatch(error, errorInfo) {}
 
   render() {
     if (this.state.hasError) {
@@ -163,7 +161,6 @@ const MainContent = () => {
   useEffect(() => {
     if (user && role === "admin" && !loginTimeRef.current) {
       loginTimeRef.current = new Date();
-      console.log("Admin logged in at:", loginTimeRef.current.toISOString());
     }
   }, [user, role]);
 
@@ -175,9 +172,6 @@ const MainContent = () => {
       try {
         const storedDeviceId = await AsyncStorage.getItem("device_id");
         if (!storedDeviceId) {
-          console.log(
-            "No device ID found in AsyncStorage for sensor monitoring"
-          );
           setDisconnectedCount(0);
           return;
         }
@@ -215,15 +209,11 @@ const MainContent = () => {
                 (sensor) => !sensor.connected
               ).length;
               setDisconnectedCount(disconnectedCount);
-              console.log(
-                `Updated disconnected sensor count: ${disconnectedCount}`
-              );
             } else {
               setDisconnectedCount(0);
             }
           },
           (error) => {
-            console.error("Sensor monitoring error:", error);
             setDisconnectedCount(0);
           }
         );
@@ -231,7 +221,6 @@ const MainContent = () => {
         unsubscribeRef.current = unsubscribe;
         return unsubscribe;
       } catch (error) {
-        console.error("Error setting up sensor monitoring:", error);
         setDisconnectedCount(0);
       }
     };
@@ -251,9 +240,6 @@ const MainContent = () => {
       try {
         // Ensure we're in a React Native minded environment
         if (!Platform || !Platform.OS) {
-          console.warn(
-            "Platform module is not available. Skipping notification setup."
-          );
           return;
         }
 
@@ -277,9 +263,7 @@ const MainContent = () => {
           finalStatus = status;
         }
 
-        console.log("Notification permission status:", finalStatus);
         if (finalStatus !== "granted") {
-          console.log("Notification permissions not granted");
           alert(
             "Please enable notifications in your device settings to receive alerts."
           );
@@ -297,25 +281,13 @@ const MainContent = () => {
 
         // Set up listeners for foreground and background notifications
         const foregroundSubscription =
-          Notifications.addNotificationReceivedListener((notification) => {
-            const { alertId } = notification.request.content.data || {};
-            console.log(
-              "Foreground notification received, data:",
-              notification.request.content.data
-            );
-          });
+          Notifications.addNotificationReceivedListener((notification) => {});
 
         const backgroundSubscription =
           Notifications.addNotificationResponseReceivedListener(
             async (response) => {
               const { notification, actionIdentifier } = response;
               const { alertId } = notification.request.content.data || {};
-              console.log(
-                "Notification response received, data:",
-                response.notification.request.content.data,
-                "actionIdentifier:",
-                actionIdentifier
-              );
 
               if (
                 alertId &&
@@ -326,11 +298,7 @@ const MainContent = () => {
                     pathname: "/(tabs)/AlertDetailPage",
                     params: { alertId },
                   });
-                } catch (error) {
-                  console.error("Error navigating to AlertDetailPage:", error);
-                }
-              } else {
-                console.log("No alertId found in notification data");
+                } catch (error) {}
               }
             }
           );
@@ -345,9 +313,7 @@ const MainContent = () => {
               backgroundSubscription
             );
         };
-      } catch (error) {
-        console.error("Error setting up notifications:", error);
-      }
+      } catch (error) {}
     };
 
     setupNotifications();
@@ -382,9 +348,7 @@ const MainContent = () => {
             ? docSnap.data().name || docSnap.id
             : docRef.id;
           deviceCache.set(fieldId, resolvedDeviceId);
-        } catch (error) {
-          console.error("Error resolving device reference:", error);
-        }
+        } catch (error) {}
       }
     }
     return resolvedDeviceId;
@@ -397,18 +361,12 @@ const MainContent = () => {
   // Notification listener for admins with debounced updates
   useEffect(() => {
     if (!user || role !== "admin") {
-      console.log(
-        "Skipping admin notification listener: Not an admin or not logged in"
-      );
       return;
     }
 
     if (!loginTimeRef.current) {
-      console.log("Login time not set yet, waiting...");
       return;
     }
-
-    console.log("Setting up real-time notification listener for admin");
 
     const alertsQuery = query(collection(db, "alerts"));
 
@@ -423,15 +381,11 @@ const MainContent = () => {
         lastUpdate = now;
 
         if (querySnapshot.docChanges().length === 0) {
-          console.log("No changes detected in onSnapshot for admin");
           return;
         }
 
         for (const change of querySnapshot.docChanges()) {
           if (change.type !== "added") {
-            console.log(
-              `Skipping change type for admin: ${change.type} for docId=${change.doc.id}`
-            );
             continue;
           }
 
@@ -439,15 +393,11 @@ const MainContent = () => {
           const alertId = change.doc.id;
 
           if (notifiedAlertsRef.has(alertId)) {
-            console.log(`Alert ${alertId} already notified for admin`);
             continue;
           }
 
           const alertTime = newAlert.occur_at?.toDate();
           if (!alertTime) {
-            console.log(
-              `Alert ${alertId} has no valid occur_at timestamp for admin`
-            );
             continue;
           }
 
@@ -460,7 +410,6 @@ const MainContent = () => {
             const resolvedDeviceId = await resolveDeviceName(deviceId);
 
             notifiedAlertsRef.add(alertId);
-            console.log(`Marked alert ${alertId} as notified for admin`);
 
             try {
               await Notifications.scheduleNotificationAsync({
@@ -473,22 +422,14 @@ const MainContent = () => {
                 },
                 trigger: null,
               });
-              console.log(
-                `Notification scheduled for admin for alert ${alertId}`
-              );
-            } catch (error) {
-              console.error("Error scheduling notification for admin:", error);
-            }
+            } catch (error) {}
           }
         }
       },
-      (error) => {
-        console.error("Admin real-time listener error:", error);
-      }
+      (error) => {}
     );
 
     return () => {
-      console.log("Cleaning up admin notification listener");
       unsubscribe();
     };
   }, [user, role]);
@@ -496,13 +437,8 @@ const MainContent = () => {
   // Notification listener for security users with debounced updates
   useEffect(() => {
     if (!user || role !== "security") {
-      console.log(
-        "Skipping security notification listener: Not a security user or not logged in"
-      );
       return;
     }
-
-    console.log("Setting up real-time notification listener for security user");
 
     const alertsQuery = query(collection(db, "alerts"));
 
@@ -517,15 +453,11 @@ const MainContent = () => {
         lastUpdate = now;
 
         if (querySnapshot.docChanges().length === 0) {
-          console.log("No changes detected in onSnapshot for security user");
           return;
         }
 
         for (const change of querySnapshot.docChanges()) {
           if (change.type !== "modified") {
-            console.log(
-              `Skipping change type for security user: ${change.type} for docId=${change.doc.id}`
-            );
             continue;
           }
 
@@ -533,22 +465,15 @@ const MainContent = () => {
           const alertId = change.doc.id;
 
           if (notifiedAlertsRef.has(alertId)) {
-            console.log(`Alert ${alertId} already notified for security user`);
             continue;
           }
 
           const alertTime = updatedAlert.occur_at?.toDate();
           if (!alertTime) {
-            console.log(
-              `Alert ${alertId} has no valid occur_at timestamp for security user`
-            );
             continue;
           }
 
           if (updatedAlert.status !== "approved") {
-            console.log(
-              `Alert ${alertId} is not approved (status: ${updatedAlert.status}), skipping for security user`
-            );
             continue;
           }
 
@@ -561,9 +486,6 @@ const MainContent = () => {
             const resolvedDeviceId = await resolveDeviceName(deviceId);
 
             notifiedAlertsRef.add(alertId);
-            console.log(
-              `Marked alert ${alertId} as notified for security user`
-            );
 
             try {
               await Notifications.scheduleNotificationAsync({
@@ -576,37 +498,21 @@ const MainContent = () => {
                 },
                 trigger: null,
               });
-              console.log(
-                `Notification scheduled for security user for alert ${alertId}`
-              );
-            } catch (error) {
-              console.error(
-                "Error scheduling notification for security:",
-                error
-              );
-            }
+            } catch (error) {}
           }
         }
       },
-      (error) => {
-        console.error("Security real-time listener error:", error);
-      }
+      (error) => {}
     );
 
     return () => {
-      console.log("Cleaning up security notification listener");
       unsubscribe();
     };
   }, [user, role]);
 
   const userTabs = useMemo(() => {
-    console.log("Filtering tabs for role:", role, "user:", !!user);
     const filteredTabs =
       role && user ? tabs.filter((tab) => tab.roles.includes(role)) : [];
-    console.log(
-      "Filtered tabs:",
-      filteredTabs.map((t) => t.name)
-    );
     return filteredTabs;
   }, [role, user]);
 
@@ -648,15 +554,6 @@ const TabBar = React.memo(({ tabs, currentPath }) => {
   const isNavigatingRef = useRef(false);
   const DEBOUNCE_DELAY = 400;
 
-  useEffect(() => {
-    console.log(
-      "TabBar rendering with tabs:",
-      tabs.map((t) => t.name),
-      "currentPath:",
-      currentPath
-    );
-  }, [tabs, currentPath]);
-
   const activeTab = useMemo(() => {
     return tabs.find((tab) => currentPath.startsWith(tab.path))?.path || "";
   }, [tabs, currentPath]);
@@ -673,7 +570,6 @@ const TabBar = React.memo(({ tabs, currentPath }) => {
         await router.replace(tabPath);
       }
     } catch (error) {
-      console.error(`Navigation error to ${tabPath}:`, error);
     } finally {
       isNavigatingRef.current = false;
       processNavigationQueue();
@@ -686,7 +582,6 @@ const TabBar = React.memo(({ tabs, currentPath }) => {
       const lastPressTime = lastPressRef.current.get(tabPath) || 0;
 
       if (now - lastPressTime < DEBOUNCE_DELAY) {
-        console.log(`Tab press debounced for ${tabPath}`);
         return;
       }
 
